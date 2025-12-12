@@ -1,0 +1,58 @@
+# --- Python Artifacts ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / Packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- PyCharm (JetBrains) ---
+# Covers the entire .idea folder, but allows sharing specific configs if needed later
+.idea/
+
+# If you prefer to share some PyCharm settings (like code style),
+# comment out '.idea/' above and uncomment the specific lines below:
+# .idea/**/workspace.xml
+# .idea/**/tasks.xml
+# .idea/**/usage.statistics.xml
+# .idea/**/dictionaries
+# .idea/**/shelf
+
+# --- Virtual Environments ---
+# Common names for virtualenvs
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# --- Environment Variables ---
+.env
+.flaskenv
+
+# --- Testing & Coverage ---
+.tox/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# --- Jupyter Notebooks ---
+.ipynb_checkpoints
+
+# --- OS Generated Files ---
+.DS_Store
+Thumbs.db
