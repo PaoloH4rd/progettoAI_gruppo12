@@ -43,3 +43,12 @@ print("\nDimensioni dopo la pulizia:", df_clean.shape)
 
 # Salva il dataset pulito
 df_clean.to_csv('version_1_cleaned.csv', index=False)
+
+# Ora definiamo le feature e il target per l'apprendimento automatico
+target_col = 'classtype_v1'
+
+# escludo il target e 'Sample code number' che è solo un identificativo
+feature_cols = [col for col in df.columns if col not in [target_col, 'Sample code number']]
+
+X = df[feature_cols]
+y = df[target_col]
