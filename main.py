@@ -1,17 +1,32 @@
-# This is a sample Python script.
+import pandas as pd
 
-# Press Ctrl+F5 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press F9 to toggle the breakpoint.
+from Preprocessing.data_cleaner import df_clean
+from Preprocessing.feature_target_variables import X, Y
+from ModelDevelopment.knn_scratch import KNN
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+if __name__ == "__main__":
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.max_columns', None)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
-#sd sa
+    print("Dataset pulito:")
+    print(df_clean.head().to_markdown(index=False, numalign="left", stralign="left"))
+
+    print("\nFeature (X):")
+    print(X.head().to_markdown(index=False, numalign="left", stralign="left"))
+
+    print("\nVariabile target (Y):")
+    print(Y.head().to_markdown(index=False, numalign="left", stralign="left"))
+
+    # Esempio di utilizzo del modello KNN
+    k = int(input("inserisci un numero di vicini da considerare: "))  # Numero di vicini
+
+    knn_model = KNN(X.values.tolist(), Y.values.tolist(), k)
+    predictions = knn_model.test(X.values.tolist())
+    print("\nPredizioni del modello KNN:")
+    print(predictions)
+
+
+
+
+
