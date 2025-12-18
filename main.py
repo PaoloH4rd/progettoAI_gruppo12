@@ -1,17 +1,47 @@
-# This is a sample Python script.
+import pandas as pd
+import random
 
-# Press Ctrl+F5 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press F9 to toggle the breakpoint.
+from Preprocessing.data_cleaner import df_clean
+from Preprocessing.feature_target_variables import X, Y
+from ModelDevelopment.knn_scratch import KNN
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+if __name__ == "__main__":
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.max_columns', None)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
-#sd sa
+    print("Dataset pulito:")
+    print(df_clean.head().to_markdown(index=False, numalign="left", stralign="left"))
+
+    print("\nFeature (X):")
+    print(X.head().to_markdown(index=False, numalign="left", stralign="left"))
+
+    print("\nVariabile target (Y):")
+    print(Y.head().to_markdown(index=False, numalign="left", stralign="left"))
+
+    # Esempio di utilizzo del modello KNN
+    k = int(input("\nInserisci un numero di vicini da considerare (k): "))  # Numero di vicini
+
+    # Seleziona un punto test randomico dal dataset
+    random_index = random.randint(0, len(X) - 1)
+    test_point = X.iloc[random_index].values.tolist()
+    actual_group = Y.iloc[random_index]
+
+    print(f"\n--- Punto test selezionato casualmente (indice {random_index}) ---")
+    print(f"Valori delle feature: {test_point}")
+    print(f"Gruppo reale: {actual_group}")
+
+    # Addestra il modello KNN (usando tutti i dati come training)
+    knn_model = KNN(X.values.tolist(), Y.values.tolist(), k)
+
+    # Testa il modello sul punto casuale
+    prediction = knn_model.test([test_point])
+
+    print(f"\n=== PREDIZIONE KNN ===")
+    print(f"Gruppo predetto: {prediction[0]}")
+    print(f"======================")
+
+
+
+
+

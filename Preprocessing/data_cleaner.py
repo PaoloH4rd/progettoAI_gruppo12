@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Legge il file CSV in un DataFrame
-df = pd.read_csv('../version_1.csv')
+df = pd.read_csv('version_1.csv')
 
 # Stampa le informazioni iniziali sul DataFrame
 print(df.info())
@@ -17,9 +17,6 @@ for col in cols_to_fix:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     except Exception as e:
         print(f"Errore durante l'elaborazione della colonna '{col}': {e}")
-
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
 
 # 2. Analisi dei valori mancanti e sostituzione dei valori non validi
 # Verificare il conteggio dei valori nulli in ogni colonna
@@ -47,8 +44,8 @@ columns_to_drop = ['Sample code number', 'BareNucleix_wrong', 'Blood Pressure', 
 df_clean = df_clean.drop(columns=columns_to_drop, errors='ignore')
 
 # Salvare il dataset pulito
-df_clean.to_csv('../version_1_cleaned.csv', index=False)
+df_clean.to_csv('version_1_cleaned.csv', index=False)
 
 print("\nDimensioni dopo la pulizia:", df_clean.shape)
 
-df_clean= pd.read_csv('../version_1_cleaned.csv')
+df_clean= pd.read_csv('version_1_cleaned.csv')
