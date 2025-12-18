@@ -3,7 +3,7 @@ class KNN:
 
     def __init__(self, x_train, y_train, k):
         """
-        Constructor to initialize training data features, labels, and number of neighbors.
+        Costruttore che inizializza le caratteristiche dei dati di addestramento, le etichette e il numero di vicini.
         """
         self.x_train = x_train
         self.y_train = y_train
@@ -12,13 +12,14 @@ class KNN:
 
     def euclidean_distance(self, x_test):
         """
-        Calculate Euclidean distance between training and testing data.
+
+        Calcola la distanza euclidea tra i dati di addestramento e di test.
 
         Args:
-        x_test (list): List of test data features.
+        x_test (list): Lista di caratteristiche dei dati di test.
 
         Returns:
-        list: List of Euclidean distances between each test sample and all training samples.
+        list: Lista di distanze euclidee tra ogni campione di test e tutti i campioni di addestramento.
         """
         test_dists = []
         for i in range(len(x_test)):
@@ -31,16 +32,16 @@ class KNN:
 
     def test(self, x_test):
         """
-        Test the model on the test data and make predictions.
+        Testa il modello sui dati di test e fa delle predizioni.
 
         Args:
-        x_test (list): List of test data features.
+        x_test (list): Lista di caratteristiche dei dati di test.
 
         Returns:
-        list: List of predicted labels for the test data.
+        list: Lista delle tabelle predette per i dati di test.
         """
         y_test_pred = []
-        test_dists = self.euclidean_distance(x_test)  # Find Euclidean Distance between training and test data
+        test_dists = self.euclidean_distance(x_test)  # Trova la Distanza Euclidea tra i dati di test e di training
         for dists in test_dists:
             k_smallest = sorted(range(len(dists)), key=lambda i: dists[i])[:self.k]
             labels = [self.y_train[i] for i in k_smallest]
