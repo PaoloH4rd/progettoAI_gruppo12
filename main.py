@@ -4,6 +4,7 @@ import random
 from Preprocessing.data_cleaner import df_clean
 from Preprocessing.feature_target_variables import X, Y
 from ModelDevelopment.knn_scratch import KNN
+from ModelEvaluation.metrics import calculate_metrics, display_metrics, select_metrics
 
 
 if __name__ == "__main__":
@@ -40,6 +41,14 @@ if __name__ == "__main__":
     print(f"\n=== PREDIZIONE KNN ===")
     print(f"Gruppo predetto: {prediction[0]}")
     print(f"======================")
+
+    # Seleziona e valuta le metriche
+    selected_metrics = select_metrics()
+    y_pred = knn_model.test(X.values.tolist())
+    metrics = calculate_metrics(Y.values.tolist(), y_pred)
+    y_true = Y.values.tolist()
+    display_metrics(metrics, selected_metrics)
+
 
 
 
