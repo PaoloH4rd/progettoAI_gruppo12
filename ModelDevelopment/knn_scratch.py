@@ -53,6 +53,11 @@ class KNN:
                 else:
                     label_counts[label] = 1
             y_test_pred.append(max(label_counts, key=label_counts.get))
+            # In caso di parità, seleziona l'etichetta randomicamente tra quelle con il conteggio massimo
+            max_count = max(label_counts.values())
+            tied_labels = [label for label, count in label_counts.items() if count == max_count]
+            if len(tied_labels) > 1:
+                y_test_pred[-1] = random.choice(tied_labels)
 
           # In caso di parità, seleziona l'etichetta randomicamente tra quelle con il conteggio massimo
             max_count = max(label_counts.values())
