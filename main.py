@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 import random
 
@@ -44,9 +46,11 @@ if __name__ == "__main__":
 
     # Seleziona e valuta le metriche
     selected_metrics = select_metrics()
-    y_pred = knn_model.test(X.values.tolist())
-    metrics = calculate_metrics(Y.values.tolist(), y_pred)
     y_true = Y.values.tolist()
+    y_pred = knn_model.test(X.values.tolist())
+    # Calcola anche le probabilità predette per ROC e AUC
+    y_pred_proba = knn_model.test_proba(X.values.tolist())
+    metrics = calculate_metrics(y_true, y_pred, y_pred_proba)
     display_metrics(metrics, selected_metrics)
 
 

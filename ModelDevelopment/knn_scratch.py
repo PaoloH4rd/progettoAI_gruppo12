@@ -1,4 +1,3 @@
-
 class KNN:
 
     def __init__(self, x_train, y_train, k):
@@ -54,3 +53,37 @@ class KNN:
             y_test_pred.append(max(label_counts, key=label_counts.get))
 
         return y_test_pred
+
+    def test_proba(self, x_test):
+        """
+        Calcola le probabilità predette per i dati di test.
+        Ritorna la probabilità della classe positiva (la classe con valore più alto).
+
+        Args:
+        x_test (list): Lista di caratteristiche dei dati di test.
+
+        Returns:
+        list: Lista delle probabilità per la classe positiva per ogni campione di test.
+        """
+        y_test_proba = []
+        test_dists = self.euclidean_distance(x_test)  # Trova la Distanza Euclidea
+
+        # Determina quale è la classe positiva (quella con valore più alto)
+        unique_classes = list(set(self.y_train))
+        positive_class = max(unique_classes)
+
+        for dists in test_dists:
+            k_smallest = sorted(range(len(dists)), key=lambda i: dists[i])[:self.k]
+            labels = [self.y_train[i] for i in k_smallest]
+            label_counts = {}
+            for label in labels:
+                if label in label_counts:
+                    label_counts[label] += 1
+                else:
+                    label_counts[label] = 1
+            # Calcola la probabilità della classe positiva
+            # Probabilità = numero di vicini positivi / numero totale di vicini
+            proba_positive = label_counts.get(positive_class, 0) / self.k
+            y_test_proba.append(proba_positive)
+
+        return y_test_proba
