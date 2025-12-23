@@ -1,7 +1,22 @@
 import math
 
 def build_confusion_matrix(y_true, y_pred):
-    """Costruisce la matrice di confusione per classificazione binaria"""
+    """
+    Costruisce la matrice di confusione per classificazione binaria
+    Funziona con qualsiasi coppia di classi binarie (es. 0/1, 2/4, etc.)
+    Assume che la classe con valore più alto sia positiva.
+    """
+    # Determina quale è la classe positiva (quella con valore più alto)
+
+    # combina i valori di y_true (valori reali) e y_pred (valori predetti) in un unico insieme
+    # (set) per ottenere tutte le classi uniche presenti.
+    unique_classes = sorted(set(y_true + y_pred))
+    if len(unique_classes) != 2:
+        raise ValueError("Le classi devono essere binarie (esattamente 2 classi)")
+
+    positive_class = max(unique_classes) # 4.0
+    negative_class = min(unique_classes) # 2.0
+
     tp = tn = fp = fn = 0
 
     for true, predicted in zip(y_true, y_pred):
@@ -9,14 +24,16 @@ def build_confusion_matrix(y_true, y_pred):
         zip combina due liste elemento per elemento, creando coppie di valori corrispondenti. 
         Qui zip(y_true, y_pred) prende il primo elemento da y_true e il primo elemento da y_pred, 
         poi il secondo da entrambi, e così via.
-        In ogni iterazione, true contiene un valore reale e predicted contiene la corrispondente predizione."""
-        if true == predicted == 1:
+        In ogni iterazione, true contiene un valore reale e predicted contiene la corrispondente predizione.
+        """
+
+        if true == positive_class and predicted == positive_class:
             tp += 1
-        elif true == predicted == 0:
+        elif true == negative_class and predicted == negative_class:
             tn += 1
-        elif predicted == 1 and true == 0:
+        elif predicted == positive_class and true == negative_class:
             fp += 1
-        elif predicted == 0 and true == 1:
+        elif predicted == negative_class and true == positive_class:
             fn += 1
 
     return tp, tn, fp, fn
@@ -27,6 +44,7 @@ def calculate_accuracy_rate(y_true, y_pred):
     Calcola Accuracy Rate
     Accuracy = (TP + TN) / (TP + TN + FP + FN)
     """
+    #  Per ogni coppia, viene aggiunto 1 al conteggio se il valore reale coincide con quello predetto
     correct = sum(1 for true, predicted in zip(y_true, y_pred) if true == predicted)
     total = len(y_true)
     return correct / total if total > 0 else 0
@@ -77,15 +95,26 @@ def calculate_roc_curve(y_true, y_pred_proba):
     curva ROC
     Ritorna: - False Positive Rate e True Positive Rate
     y_pred_proba: probabilità predette (valori tra 0 e 1)
+    y_true: valori reali (classi binarie qualsiasi, es. 2 e 4)
     """
+    # Determina quale è la classe positiva (quella con valore più alto)
+    unique_classes = sorted(set(y_true))
+    if len(unique_classes) != 2:
+        raise ValueError("Le classi devono essere binarie (esattamente 2 classi)")
+
+    positive_class = max(unique_classes)
+
+    # Converte y_true a formato binario (0/1) dove 1 = classe positiva
+    y_true_binary = [1 if y == positive_class else 0 for y in y_true]
+
     # Ordina per probabilità decrescente
     sorted_indices = sorted(range(len(y_pred_proba)), key=lambda i: y_pred_proba[i], reverse=True)
-    sorted_y_true = [y_true[i] for i in sorted_indices]
+    sorted_y_true = [y_true_binary[i] for i in sorted_indices]
     sorted_y_proba = [y_pred_proba[i] for i in sorted_indices]
 
     # Calcola TP, FP, TN, FN totali
-    n_pos = sum(y_true)  # Numero di positivi
-    n_neg = len(y_true) - n_pos  # Numero di negativi
+    n_pos = sum(y_true_binary)  # Numero di positivi
+    n_neg = len(y_true_binary) - n_pos  # Numero di negativi
 
     tpr_list = [0]  # Inizia da (0, 0)
     fpr_list = [0]
@@ -153,14 +182,14 @@ def calculate_metrics(y_true, y_pred, y_pred_proba=None):
     }
 
     # # Se sono disponibili le probabilità, calcola ROC e AUC
-    # if y_pred_proba is not None:
-    #     fpr, tpr = calculate_roc_curve(y_true, y_pred_proba)
-    #     auc = calculate_auc(fpr, tpr)
-    #
-    #     metrics['roc'] = {'fpr': fpr, 'tpr': tpr}
-    #     metrics['auc'] = auc
-    #
-    # return metrics
+    if y_pred_proba is not None:
+        fpr, tpr = calculate_roc_curve(y_true, y_pred_proba)
+        auc = calculate_auc(fpr, tpr)
+
+        metrics['roc'] = {'fpr': fpr, 'tpr': tpr}
+        metrics['auc'] = auc
+
+    return metrics
 
 
 def display_metrics(metrics, selected_metrics):
@@ -170,7 +199,8 @@ def display_metrics(metrics, selected_metrics):
         '2': ('Error Rate', 'error_rate', 'Percentuale di previsioni errate'),
         '3': ('Sensitivity (Recall)', 'sensitivity', 'Capacità di rilevare i positivi'),
         '4': ('Specificity', 'specificity', 'Capacità di rilevare i negativi'),
-        '5': ('Geometric Mean', 'gmean', 'Media geometrica di sensibilità e specificità')
+        '5': ('Geometric Mean', 'gmean', 'Media geometrica di sensibilità e specificità'),
+        '6': ('Area Under the Curve (AUC)', 'auc', 'Area sotto la curva ROC (0-1, più alto è meglio)')
     }
 
     print("\n" + "=" * 60)
@@ -180,16 +210,19 @@ def display_metrics(metrics, selected_metrics):
     for choice in selected_metrics:
         if choice in metrics_labels:
             label, key, description = metrics_labels[choice]
-            value = metrics[key]
-            print(f"\n{label}:")
-            print(f"  Descrizione: {description}")
-            print(f"  Valore: {value:.4f}")
+            if key == 'auc':
+                # AUC è un valore singolo
+                if metrics.get(key) is not None:
+                    value = metrics[key]
+                    print(f"\n{label}:")
+                    print(f"  Descrizione: {description}")
+                    print(f"  Valore: {value:.4f}")
+            else:
+                value = metrics[key]
+                print(f"\n{label}:")
+                print(f"  Descrizione: {description}")
+                print(f"  Valore: {value:.4f}")
 
-    # Mostra AUC se disponibile
-    if metrics.get('auc') is not None:
-        print(f"\nArea Under the Curve (AUC):")
-        print(f"  Descrizione: Area sotto la curva ROC (0-1, più alto è meglio)")
-        print(f"  Valore: {metrics['auc']:.4f}")
 
     print("\n" + "=" * 60 + "\n")
 
@@ -204,13 +237,14 @@ def select_metrics():
     print("3. Sensitivity (Recall) - Capacità di rilevare i positivi")
     print("4. Specificity - Capacità di rilevare i negativi")
     print("5. Geometric Mean - Media geometrica di sensibilità e specificità")
+    print("6. AUC (Area Under the Curve) - Area sotto la curva ROC (richiede y_pred_proba)")
     print("0. Seleziona tutte le metriche")
     print("=" * 60)
 
     choice = input("\nInserisci i numeri delle metriche (separati da virgola, es: 1,2,3): ").strip()
 
     if choice == "0":
-        return ['1', '2', '3', '4', '5']
+        return ['1', '2', '3', '4', '5', '6']
 
-    selected = [c.strip() for c in choice.split(',') if c.strip() in ['1', '2', '3', '4', '5']]
+    selected = [c.strip() for c in choice.split(',') if c.strip() in ['1', '2', '3', '4', '5', '6']]
     return selected if selected else ['0']
