@@ -17,6 +17,6 @@ target_col = 'classtype_v1'
 # Definisce le feature (tutte le colonne tranne la variabile target)
 feature_cols = [col for col in df_clean.columns if col not in [target_col]]
 
-# Crea il dataset delle feature (X) e la variabile target (Y)
+# Crea il dataset delle feature (X) e la variabile target (Y) non ancora diviso tra train e test
 X = df_clean[feature_cols]
 Y = df_clean[target_col]

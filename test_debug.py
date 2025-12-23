@@ -17,7 +17,9 @@ knn_model = KNN(X.values.tolist(), Y.values.tolist(), k)
 
 # Testa il modello
 y_true = Y.values.tolist()
+# Faccio delle predizioni sui dati di training stessi -> (non c'è differenza tra train e test in questo debug)
 y_pred = knn_model.test(X.values.tolist())
+
 y_pred_proba = knn_model.test_proba(X.values.tolist())
 
 print(f"\nPrimis 10 y_true: {y_true[:10]}")

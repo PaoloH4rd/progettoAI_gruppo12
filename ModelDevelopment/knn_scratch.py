@@ -66,7 +66,9 @@ class KNN:
         list: Lista delle probabilità per la classe positiva per ogni campione di test.
         """
         y_test_proba = []
-        test_dists = self.euclidean_distance(x_test)  # Trova la Distanza Euclidea
+        test_dists = self.euclidean_distance(x_test)  #  Questo metodo calcola
+        # la distanza euclidea tra i campioni di test forniti in x_test e tutti
+        # i campioni di addestramento memorizzati in self.x_train.
 
         # Determina quale è la classe positiva (quella con valore più alto)
         unique_classes = list(set(self.y_train))
