@@ -1,4 +1,3 @@
-
 import pandas as pd
 import random
 
@@ -6,7 +5,7 @@ from Preprocessing.data_cleaner import df_clean
 from Preprocessing.feature_target_variables import X, Y
 from ModelDevelopment.knn_scratch import KNN
 from ModelEvaluation.Holdout import Holdout
-
+from ModelEvaluation.metrics import calculate_metrics, display_metrics, select_metrics
 
 if __name__ == "__main__":
     pd.set_option('display.max_rows', None)
@@ -43,18 +42,26 @@ if __name__ == "__main__":
     print(f"Gruppo predetto: {prediction[0]}")
     print(f"======================")
 
-# Esempio di utilizzo della tecnica di Holdout
-print(f"\n--- Esempio di Holdout ---")
-holdout = Holdout(0.2, 42)
-X_train, X_test, Y_train, Y_test = holdout.split_train_test(X.values.tolist(), Y.values.tolist())
+    # Esempio di utilizzo della tecnica di Holdout
+    print(f"\n--- Esempio di Holdout ---")
+    holdout = Holdout(0.2, 42)
+    X_train, X_test, Y_train, Y_test = holdout.split_train_test(X.values.tolist(), Y.values.tolist())
 
-print(f"Dimensione training set: {len(X_train)}")
-print(f"Dimensione test set: {len(X_test)}")
-print(f"Primi 5 elementi del training set X: {X_train[:5]}")
-print(f"Primi 5 elementi del training set Y: {Y_train[:5]}")
-print(f"Primi 5 elementi del test set X: {X_test[:5]}")
-print(f"Primi 5 elementi del test set Y: {Y_test[:5]}")
+    print(f"Dimensione training set: {len(X_train)}")
+    print(f"Dimensione test set: {len(X_test)}")
+    print(f"Primi 5 elementi del training set X: {X_train[:5]}")
+    print(f"Primi 5 elementi del training set Y: {Y_train[:5]}")
+    print(f"Primi 5 elementi del test set X: {X_test[:5]}")
+    print(f"Primi 5 elementi del test set Y: {Y_test[:5]}")
 
+    # Seleziona e valuta le metriche
+    selected_metrics = select_metrics()
+    y_true = Y.values.tolist()
+    y_pred = knn_model.test(X.values.tolist())
+    # Calcola anche le probabilità predette per ROC e AUC
+    y_pred_proba = knn_model.test_proba(X.values.tolist())
+    metrics = calculate_metrics(y_true, y_pred, y_pred_proba)
+    display_metrics(metrics, selected_metrics)
 
 
 
