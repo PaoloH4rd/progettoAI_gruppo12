@@ -1,5 +1,5 @@
 ## --- Python Artifacts ---
-#__pycache__/
+__pycache__/
 #*.py[cod]
 #*$py.class
 #
@@ -56,3 +56,4 @@
 ## --- OS Generated Files ---
 #.DS_Store
 #Thumbs.db
+*.md

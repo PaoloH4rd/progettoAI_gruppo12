@@ -1,60 +1,139 @@
-import sys
-
 import pandas as pd
-import random
-
-from Preprocessing.data_cleaner import df_clean
-from Preprocessing.feature_target_variables import X, Y
+import os
+from Preprocessing.feature_target_variables import load_data
 from ModelDevelopment.knn_scratch import KNN
 from ModelEvaluation.metrics import calculate_metrics, display_metrics, select_metrics
+from ModelEvaluation.cross_validation import KFoldCrossValidation
 
+def clear_screen():
+    """
+    Pulisce la schermata del terminale in modo portabile.
+    Stampa 100 righe vuote per simulare la pulizia dello schermo,
+    """
+    print("\n" * 100)
 
-if __name__ == "__main__":
+def run_holdout_validation(X, Y, k):
+    """Esegue la validazione Holdout, richiedendo l'input finché non è valido."""
+    while True:
+        try:
+            test_perc_str = input("Inserisci la percentuale per il test set (es. 0.2 per 20%): ")
+            test_perc = float(test_perc_str)
+            if not 0 < test_perc < 1:
+                raise ValueError("La percentuale deve essere un numero compreso tra 0 e 1 (esclusi).")
+            break
+        except ValueError as e:
+            print(f"Input non valido: {e}. Riprova.")
+
+    train_size = int(len(X) * (1 - test_perc))
+    if k >= train_size:
+        print(f"Errore: Il numero di vicini (k={k}) non può essere >= alla dimensione del training set ({train_size}).")
+        return
+
+    splitter = KFoldCrossValidation()
+    X_train, X_test, Y_train, Y_test = splitter.holdout_split(X.values.tolist(), Y.values.tolist(), test_size=test_perc)
+
+    print(f"\n--- Divisione Holdout ({int((1-test_perc)*100)}/{int(test_perc*100)}) ---")
+    print(f"Dimensioni Training Set: {len(X_train)} campioni")
+    print(f"Dimensioni Test Set: {len(X_test)} campioni")
+    print("------------------------------------")
+
+    print("\nAddestramento del modello KNN...")
+    knn_model = KNN(X_train, Y_train, k)
+    print("Addestramento completato.")
+
+    print("\nValutazione del modello sul Test Set...")
+    y_pred = knn_model.test(X_test)
+    y_pred_proba = knn_model.test_proba(X_test)
+    print("Valutazione completata.")
+
+    selected_metrics = select_metrics()
+    metrics = calculate_metrics(Y_test, y_pred, y_pred_proba)
+    display_metrics(metrics, selected_metrics)
+
+def run_kfold_validation(X, Y, k):
+    """Esegue la K-Fold Cross Validation, richiedendo l'input finché non è valido."""
+    while True:
+        try:
+            K_folds_str = input("Inserisci il numero di fold (K) per la Cross Validation: ")
+            K_folds = int(K_folds_str)
+            if K_folds <= 1:
+                raise ValueError("Il numero di fold deve essere maggiore di 1.")
+            break
+        except ValueError as e:
+            print(f"Input non valido: {e}. Riprova.")
+
+    train_size_per_fold = int(len(X) * (1 - 1/K_folds))
+    if k >= train_size_per_fold:
+        print(f"Errore: Il numero di vicini (k={k}) non può essere >= alla dimensione del training set in ogni fold ({train_size_per_fold}).")
+        return
+
+    kfold_validator = KFoldCrossValidation(k=K_folds)
+    kfold_validator.evaluate(X.values.tolist(), Y.values.tolist(), KNN, k)
+    print("\nK-Fold Cross Validation completata.")
+
+def run_stratified_shuffle_split(X, Y, k):
+    pass
+
+def main():
+    """Funzione principale che gestisce il menu interattivo."""
+    if not os.path.exists('version_1.csv'):
+        print("ERRORE: File 'version_1.csv' non trovato. Assicurati che sia nella root del progetto.")
+        input("Premi Invio per uscire.")
+        return
+
     pd.set_option('display.max_rows', None)
     pd.set_option('display.max_columns', None)
 
-    print("Dataset pulito:")
-    print(df_clean.head().to_markdown(index=False, numalign="left", stralign="left"))
+    X, Y = load_data()
+    
+    clear_screen()
+    print("Benvenuto nel programma di classificazione k-NN.")
+    print(f"Dataset caricato: {len(X)} campioni con {len(X.columns)} feature.")
+    input("\nPremi Invio per continuare al menu principale...")
 
-    print("\nFeature (X):")
-    print(X.head().to_markdown(index=False, numalign="left", stralign="left"))
+    while True:
+        clear_screen()
+        # Rimosso il '\n' iniziale per evitare output imprevisti
+        print("="*50)
+        print("MENU PRINCIPALE")
+        print("="*50)
+        print("1. Esegui validazione Holdout")
+        print("2. Esegui K-Fold Cross Validation (Metodo B)")
+        print("3. Esegui Stratified Shuffle Split (Metodo C)")
+        print("="*50)
 
-    print("\nVariabile target (Y):")
-    print(Y.head().to_markdown(index=False, numalign="left", stralign="left"))
+        try:
+            choice = int(input("Inserisci la tua scelta (1-3): "))
+        except ValueError:
+            print("Scelta non valida. Inserisci un numero.")
+            continue
 
-    # Esempio di utilizzo del modello KNN
-    k = int(input("\nInserisci un numero di vicini da considerare (k): "))  # Numero di vicini
+        if choice not in [1, 2, 3]:
+            print("Scelta non valida. Riprova.")
+            continue
 
-    # Seleziona un punto test randomico dal dataset
-    random_index = random.randint(0, len(X) - 1)
-    test_point = X.iloc[random_index].values.tolist()
-    actual_group = Y.iloc[random_index]
+        while True:
+            try:
+                k_neighbors_str = input("\nInserisci il numero di vicini (k) per KNN: ")
+                k_neighbors = int(k_neighbors_str)
+                if k_neighbors <= 0:
+                    raise ValueError("Il numero di vicini deve essere un intero positivo.")
+                break
+            except ValueError as e:
+                print(f"Input non valido: {e}. Riprova.")
+        
+        if choice == 1:
+            run_holdout_validation(X, Y, k_neighbors)
+        elif choice == 2:
+            run_kfold_validation(X, Y, k_neighbors)
+        elif choice == 3:
+            run_stratified_shuffle_split(X, Y, k_neighbors)
 
-    print(f"\n--- Punto test selezionato casualmente (indice {random_index}) ---")
-    print(f"Valori delle feature: {test_point}")
-    print(f"Gruppo reale: {actual_group}")
+        another_run = input("\nVuoi eseguire un'altra operazione? (s/n): ").lower()
+        if another_run != 's':
+            clear_screen()
+            print("Uscita dal programma. Arrivederci!")
+            break
 
-    # Addestra il modello KNN (usando tutti i dati come training)
-    knn_model = KNN(X.values.tolist(), Y.values.tolist(), k)
-
-    # Testa il modello sul punto casuale
-    prediction = knn_model.test([test_point])
-
-    print(f"\n=== PREDIZIONE KNN ===")
-    print(f"Gruppo predetto: {prediction[0]}")
-    print(f"======================")
-
-    # Seleziona e valuta le metriche
-    selected_metrics = select_metrics()
-    y_true = Y.values.tolist()
-    y_pred = knn_model.test(X.values.tolist())
-    # Calcola anche le probabilità predette per ROC e AUC
-    y_pred_proba = knn_model.test_proba(X.values.tolist())
-    metrics = calculate_metrics(y_true, y_pred, y_pred_proba)
-    display_metrics(metrics, selected_metrics)
-
-
-
-
-
-
+if __name__ == "__main__":
+    main()
