@@ -20,20 +20,19 @@ class KFoldCrossValidation:
             random.seed(random_state)
 
         # 1. Inizializza un dizionario speciale (defaultdict)
-        # Un defaultdict(list) si comporta come un dizionario normale, ma se si tenta di acceder a una chiave che non esiste, la crea automaticamente con una lista vuota come valore.
+        # Un defaultdict(list) si comporta come un dizionario normale, ma se si tenta di accedere a una chiave che non esiste, la crea automaticamente con una lista vuota come valore.
         # Questo è utile per evitare di dover controllare ogni volta se una chiave (la classe) è già presente nel dizionario prima di aggiungere un elemento.
         indices_by_class = defaultdict(list)
 
         # 2. Raggruppa gli indici dei dati per classe
         # Itera su tutta la lista delle etichette (Y), tenendo traccia sia dell'indice (i) che del valore dell'etichetta (label) per ogni campione.
-
         for i, label in enumerate(Y):
             # Usa l'etichetta (es. 2 per 'Benigno', 4 per 'Maligno') come chiave del dizionario
             # e aggiunge l'indice (la posizione) del campione a quella lista.
             # Alla fine di questo ciclo, avremo un dizionario simile a questo:
             # {
-            #   2: [0, 2, 5, ...],  <-- Tutti gli indici dei campioni benigni
-            #   4: [1, 3, 4, ...]   <-- Tutti gli indici dei campioni maligni
+            #    2: [0, 2, 5, ...],  <-- Tutti gli indici dei campioni benigni
+            #    4: [1, 3, 4, ...]   <-- Tutti gli indici dei campioni maligni
             # }
             indices_by_class[label].append(i)
 
@@ -70,8 +69,7 @@ class KFoldCrossValidation:
         # Separa nuovamente le feature e le etichette, ora mescolate.
         # Il controllo 'if train_combined' evita errori se il set di training è vuoto.
 
-
-        # UTILIZZO l'asterisco per passare a zip le chiavi e i valori di train_combinedd invece che l'oggetto in se
+        # UTILIZZO l'asterisco per passare a zip le chiavi e i valori di train_combined invece che l'oggetto in se
         X_train, Y_train = zip(*train_combined) if train_combined else ([], [])
 
         # Esegue la stessa operazione di mescolamento per il test set.
@@ -83,10 +81,9 @@ class KFoldCrossValidation:
         # Converte le tuple restituite da zip in liste e le restituisce.
         return list(X_train), list(X_test), list(Y_train), list(Y_test)
 
-
     def split_data(self, X, Y):
         """
-        Suddivide i dati in k fold per la K-Fold Cross Validation standard (non stratificata).
+        Suddivide i dati in k fold per la K-Fold Cross Validation standard.
         Ogni fold viene utilizzato una volta come set di test, mentre i restanti k-1 fold
         vengono usati come set di addestramento.
 
@@ -125,6 +122,7 @@ class KFoldCrossValidation:
 
             # 5. Definizione degli indici di training
             # Gli indici di training sono tutti quelli che non sono nel set di test.
+            # Concateniamo tutto ciò che sta prima dell'inizio del test con tutto ciò che sta dopo la fine del test.
             train_indices = indices[:test_start] + indices[test_end:]
 
             # 6. Creazione dei set di dati
@@ -143,66 +141,48 @@ class KFoldCrossValidation:
 
     def evaluate(self, X, Y, knn_model_class, k_neighbors):
         """
-        Esegue la validazione e restituisce un dizionario completo di risultati.
-        Questo metodo combina due tecniche di validazione:
+        Esegue una validazione combinata: K-Fold Cross-Validation sul training set e
+        una valutazione finale su un set di holdout.
+
         1. Holdout: Suddivide i dati iniziali in un set di training principale e un
            set di test finale (holdout) che non verrà toccato fino alla fine.
         2. K-Fold Cross Validation: Esegue la cross-validation sul set di training
            principale per ottenere una stima robusta delle performance del modello.
-        Infine, addestra un modello finale su tutto il training set principale e lo
-        valuta sul set di holdout per ottenere le performance definitive.
+        3. Valutazione Finale: Addestra un modello finale su tutto il training set principale
+           e lo valuta sul set di holdout per ottenere le performance definitive.
         """
         # 1. SUDDIVISIONE INIZIALE (HOLDOUT)
-        # Divide il dataset completo in un set di training/validazione (80%) e un set di test finale (20%).
-        # le % sono i default
-        # Il set di test (holdout) non verrà usato durante la K-Fold Cross Validation.
         X_train_main, X_test_holdout, Y_train_main, Y_test_holdout = self.holdout_split(X, Y)
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("HOLDOUT: Dati divisi in Training Set e Test Set")
         print(f"  Training samples: {len(X_train_main)}")
         print(f"  Test samples (holdout): {len(X_test_holdout)}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
-        # 2. PREPARAZIONE PER LA K-FOLD CROSS VALIDATION
-        # Usa il metodo split_data per suddividere il set di training principale in 'k' fold.
+        # 2. ESECUZIONE DELLA K-FOLD CROSS VALIDATION (sul training set principale)
         folds = self.split_data(X_train_main, Y_train_main)
         all_fold_metrics = []
-        
-        # 3. ESECUZIONE DELLA K-FOLD CROSS VALIDATION
+
         print(f"INIZIO K-FOLD CROSS VALIDATION (k={self.k}) sul Training Set...")
-        # Itera su ogni fold. Ad ogni iterazione, un fold diverso viene usato come test set
-        # e i restanti k-1 fold vengono usati come training set.
         for fold_num, (X_train_fold, Y_train_fold, X_test_fold, Y_test_fold) in enumerate(folds, 1):
             print(f"  - Fold {fold_num}/{self.k}")
-            # Crea e addestra un nuovo modello KNN per questo specifico fold.
             knn_model = knn_model_class(X_train_fold, Y_train_fold, k_neighbors)
-            # Esegue le predizioni sul set di test del fold.
             y_pred = knn_model.test(X_test_fold)
             y_pred_proba = knn_model.test_proba(X_test_fold)
-            # Calcola le metriche di performance per questo fold.
             fold_metrics = calculate_metrics(Y_test_fold, y_pred, y_pred_proba)
-            # Aggiunge le metriche del fold alla lista complessiva.
             all_fold_metrics.append(fold_metrics)
         print("K-Fold Cross Validation completata.")
 
-        # 4. VALUTAZIONE FINALE SUL SET DI HOLDOUT
+        # 3. VALUTAZIONE FINALE SUL SET DI HOLDOUT
         print("\nValutazione finale sul set di Holdout...")
-        # Addestra un modello finale utilizzando TUTTI i dati del training set principale.
-        # Questo modello è considerato il prodotto finale del processo di addestramento.
         final_model = knn_model_class(X_train_main, Y_train_main, k_neighbors)
-        # Valuta il modello finale sul set di holdout, che non è mai stato visto prima.
-        # Questo fornisce una stima imparziale delle performance del modello su dati nuovi.
         y_pred_final = final_model.test(X_test_holdout)
         y_pred_proba_final = final_model.test_proba(X_test_holdout)
         final_metrics = calculate_metrics(Y_test_holdout, y_pred_final, y_pred_proba_final)
         print("Valutazione finale completata.")
 
-        # 5. RESTITUZIONE DEI RISULTATI
-        # Ritorna un dizionario contenente tutte le informazioni raccolte:
-        # - Le metriche di ogni singolo fold.
-        # - Le metriche finali ottenute sul set di holdout.
-        # - I dati necessari per generare grafici (es. matrice di confusione, curva ROC) sul set di holdout.
+        # 4. RESTITUZIONE DI TUTTI I RISULTATI
         return {
             "all_fold_metrics": all_fold_metrics,
             "final_holdout_metrics": final_metrics,
