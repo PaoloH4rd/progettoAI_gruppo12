@@ -2,34 +2,17 @@ import math
 
 def build_confusion_matrix(y_true, y_pred):
     """
-    Costruisce la matrice di confusione per classificazione binaria
-    Funziona con qualsiasi coppia di classi binarie (es. 0/1, 2/4, etc.)
-    Assume che la classe con valore più alto sia positiva.
+    Costruisce la matrice di confusione per classificazione binaria.
     """
-    # Determina quale è la classe positiva (quella con valore più alto)
-    # combina i valori di y_true (valori reali) e y_pred (valori predetti) in un unico insieme
-    # (set) per ottenere tutte le classi uniche presenti.
     all_unique_classes = sorted(list(set(y_true) | set(y_pred)))
-
-    # Se nei dati reali e predetti compare una sola classe in totale, non è
-    # possibile costruire una matrice di confusione completa (es. TP, FN).
-    # Restituire zero per tutto è l'opzione più sicura per evitare crash
-    # e far sì che le metriche derivate (sens, spec) risultino 0.
     if len(all_unique_classes) < 2:
-        return 0, 0, 0, 0  # tp, tn, fp, fn
+        return 0, 0, 0, 0
 
     positive_class = max(all_unique_classes)
     negative_class = min(all_unique_classes)
     tp = tn = fp = fn = 0
 
     for true, predicted in zip(y_true, y_pred):
-        """
-        zip combina due liste elemento per elemento, creando coppie di valori corrispondenti. 
-        Qui zip(y_true, y_pred) prende il primo elemento da y_true e il primo elemento da y_pred, 
-        poi il secondo da entrambi, e così via.
-        In ogni iterazione, true contiene un valore reale e predicted contiene la corrispondente predizione.
-        """
-
         if true == positive_class and predicted == positive_class:
             tp += 1
         elif true == negative_class and predicted == negative_class:
@@ -38,142 +21,81 @@ def build_confusion_matrix(y_true, y_pred):
             fp += 1
         elif predicted == negative_class and true == positive_class:
             fn += 1
-
     return tp, tn, fp, fn
 
-
 def calculate_accuracy_rate(y_true, y_pred):
-    """
-    Calcola Accuracy Rate
-    Accuracy = (TP + TN) / (TP + TN + FP + FN)
-    """
-    #  Per ogni coppia, viene aggiunto 1 al conteggio se il valore reale coincide con quello predetto
+    """Calcola l'Accuracy Rate."""
     correct = sum(1 for true, predicted in zip(y_true, y_pred) if true == predicted)
     total = len(y_true)
     return correct / total if total > 0 else 0
 
-
 def calculate_error_rate(y_true, y_pred):
-    """
-    Error Rate = 1 - Accuracy = (FP + FN) / (TP + TN + FP + FN)
-    """
+    """Calcola l'Error Rate."""
     return 1 - calculate_accuracy_rate(y_true, y_pred)
 
-
 def calculate_sensitivity(y_true, y_pred):
-    """
-    Sensitivity True Positive Rate
-    Sensitivity = TP / (TP + FN)
-    Capacità del modello di rilevare i casi positivi
-    """
-    tp, tn, fp, fn = build_confusion_matrix(y_true, y_pred)
+    """Calcola la Sensitivity (True Positive Rate)."""
+    tp, _, _, fn = build_confusion_matrix(y_true, y_pred)
     denominator = tp + fn
     return tp / denominator if denominator > 0 else 0
 
-
 def calculate_specificity(y_true, y_pred):
-    """
-    Specificity (True Negative Rate)
-    Specificity = TN / (TN + FP)
-    Capacità del modello di rilevare i casi negativi
-    """
-    tp, tn, fp, fn = build_confusion_matrix(y_true, y_pred)
+    """Calcola la Specificity (True Negative Rate)."""
+    _, tn, fp, _ = build_confusion_matrix(y_true, y_pred)
     denominator = tn + fp
     return tn / denominator if denominator > 0 else 0
 
-
 def calculate_geometric_mean(y_true, y_pred):
-    """
-    Geometric Mean
-    G-Mean = sqrt(Sensitivity × Specificity)
-    Media geometrica di sensibilità e specificità
-    """
+    """Calcola la Geometric Mean."""
     sensitivity = calculate_sensitivity(y_true, y_pred)
     specificity = calculate_specificity(y_true, y_pred)
-    return math.sqrt(sensitivity * specificity)
-
+    return math.sqrt(sensitivity * specificity) if sensitivity > 0 and specificity > 0 else 0
 
 def calculate_roc_curve(y_true, y_pred_proba):
-    """
-    curva ROC
-    Ritorna: - False Positive Rate e True Positive Rate sotto forma di liste
-    y_pred_proba: probabilità predette (valori tra 0 e 1)
-    y_true: valori reali (classi binarie qualsiasi, es. 2 e 4)
-    """
-    # Determina quale è la classe positiva (quella con valore più alto)
+    """Calcola i punti (FPR, TPR) per la curva ROC."""
     true_unique_classes = sorted(set(y_true))
-    # Se nei dati reali c'è una sola classe, la curva ROC non è definita.
     if len(true_unique_classes) < 2:
-        # Restituisce None per indicare che il calcolo non è possibile.
         return None, None
 
     positive_class = max(true_unique_classes)
-
-    # Converte y_true a formato binario (0/1) dove 1 = classe positiva
     y_true_binary = [1 if y == positive_class else 0 for y in y_true]
 
-    # Ordina per probabilità decrescente
     sorted_indices = sorted(range(len(y_pred_proba)), key=lambda i: y_pred_proba[i], reverse=True)
     sorted_y_true = [y_true_binary[i] for i in sorted_indices]
-    sorted_y_proba = [y_pred_proba[i] for i in sorted_indices]
 
-    # Calcola TP, FP, TN, FN totali
-    n_pos = sum(y_true_binary)  # Numero di positivi
-    n_neg = len(y_true_binary) - n_pos  # Numero di negativi
+    n_pos = sum(y_true_binary)
+    n_neg = len(y_true_binary) - n_pos
 
-    tpr_list = [0]  # Inizia da (0, 0)
+    tpr_list = [0]
     fpr_list = [0]
-
     tp = 0
     fp = 0
 
-    # Itera attraverso i threshold
-    for i, (actual, proba) in enumerate(zip(sorted_y_true, sorted_y_proba)):
+    for i, actual in enumerate(sorted_y_true):
         if actual == 1:
             tp += 1
         else:
             fp += 1
-
-        # Calcola TPR e FPR
-        # - False Positive Rate e True Positive Rate
         tpr = tp / n_pos if n_pos > 0 else 0
         fpr = fp / n_neg if n_neg > 0 else 0
-
         tpr_list.append(tpr)
         fpr_list.append(fpr)
 
     return fpr_list, tpr_list
 
-
 def calculate_auc(fpr, tpr):
-    """
-    Calcola l'Area Under the Curve (AUC) usando il metodo dei trapezi
-    Integra la curva ROC
-    """
-    return trapezoidal_integration(fpr, tpr)
-
-
-def trapezoidal_integration(x, y):
-    """
-    Metodo dei trapezi per calcolare l'integrale numericamente
-    """
+    """Calcola l'Area Under the Curve (AUC) usando il metodo dei trapezi."""
+    if fpr is None or tpr is None:
+        return None
     area = 0
-    for i in range(len(x) - 1):
-        # Area del trapezio = (base) * (altezza_media)
-        width = x[i + 1] - x[i]
-        height_avg = (y[i] + y[i + 1]) / 2
+    for i in range(len(fpr) - 1):
+        width = fpr[i + 1] - fpr[i]
+        height_avg = (tpr[i] + tpr[i + 1]) / 2
         area += width * height_avg
     return area
 
-
 def calculate_metrics(y_true, y_pred, y_pred_proba=None):
-    """
-    Calcola tutte le metriche di valutazione
-    y_true: valori reali
-    y_pred: predizioni (binarie 0/1)
-    y_pred_proba: probabilità predette ROC/AUC
-    """
-
+    """Calcola tutte le metriche di valutazione."""
     metrics = {
         'accuracy': calculate_accuracy_rate(y_true, y_pred),
         'error_rate': calculate_error_rate(y_true, y_pred),
@@ -182,71 +104,8 @@ def calculate_metrics(y_true, y_pred, y_pred_proba=None):
         'gmean': calculate_geometric_mean(y_true, y_pred),
         'auc': None
     }
-
-    # Se sono disponibili le probabilità, calcola ROC e AUC
     if y_pred_proba is not None:
         fpr, tpr = calculate_roc_curve(y_true, y_pred_proba)
-        # Calcola l'AUC solo se la curva ROC è stata generata con successo
         if fpr is not None and tpr is not None:
-            auc = calculate_auc(fpr, tpr)
-            metrics['auc'] = auc
-
+            metrics['auc'] = calculate_auc(fpr, tpr)
     return metrics
-
-
-def display_metrics(metrics, selected_metrics):
-    """Visualizza le metriche selezionate con descrizione"""
-    metrics_labels = {
-        '1': ('Accuracy Rate', 'accuracy', 'Percentuale di previsioni corrette'),
-        '2': ('Error Rate', 'error_rate', 'Percentuale di previsioni errate'),
-        '3': ('Sensitivity (Recall)', 'sensitivity', 'Capacità di rilevare i positivi'),
-        '4': ('Specificity', 'specificity', 'Capacità di rilevare i negativi'),
-        '5': ('Geometric Mean', 'gmean', 'Media geometrica di sensibilità e specificità'),
-        '6': ('Area Under the Curve (AUC)', 'auc', 'Area sotto la curva ROC (0-1, più alto è meglio)')
-    }
-
-    print("\n" + "=" * 60)
-    print("METRICHE DI VALUTAZIONE DEL MODELLO")
-    print("=" * 60)
-
-    for choice in selected_metrics:
-        if choice in metrics_labels:
-            label, key, description = metrics_labels[choice]
-            if key == 'auc':
-                # AUC è un valore singolo
-                if metrics.get(key) is not None:
-                    value = metrics[key]
-                    print(f"\n{label}:")
-                    print(f"  Descrizione: {description}")
-                    print(f"  Valore: {value:.4f}")
-            else:
-                value = metrics[key]
-                print(f"\n{label}:")
-                print(f"  Descrizione: {description}")
-                print(f"  Valore: {value:.4f}")
-
-
-    print("\n" + "=" * 60 + "\n")
-
-
-def select_metrics():
-    """Menu interattivo per selezionare le metriche"""
-    print("\n" + "=" * 60)
-    print("SELEZIONE METRICHE DI VALUTAZIONE")
-    print("=" * 60)
-    print("1. Accuracy Rate - Percentuale di previsioni corrette")
-    print("2. Error Rate - Percentuale di previsioni errate")
-    print("3. Sensitivity (Recall) - Capacità di rilevare i positivi")
-    print("4. Specificity - Capacità di rilevare i negativi")
-    print("5. Geometric Mean - Media geometrica di sensibilità e specificità")
-    print("6. AUC (Area Under the Curve) - Area sotto la curva ROC")
-    print("0. Seleziona tutte le metriche")
-    print("=" * 60)
-
-    choice = input("\nInserisci i numeri delle metriche (separati da virgola, es: 1,2,3): ").strip()
-
-    if choice == "0":
-        return ['1', '2', '3', '4', '5', '6']
-
-    selected = [c.strip() for c in choice.split(',') if c.strip() in ['1', '2', '3', '4', '5', '6']]
-    return selected if selected else ['0']

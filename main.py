@@ -1,9 +1,13 @@
-import pandas as pd
 import os
-from Preprocessing.feature_target_variables import load_data
+import pandas as pd
+import time
 from ModelDevelopment.knn_scratch import KNN
-from ModelEvaluation.metrics import calculate_metrics, display_metrics, select_metrics
 from ModelEvaluation.cross_validation import KFoldCrossValidation
+from ModelEvaluation.metrics import calculate_metrics
+from ModelEvaluation.results_handler import HoldoutResultsHandler, KFoldResultsHandler
+from Preprocessing.feature_target_variables import load_data
+from Preprocessing.data_cleaner import clean_data
+
 
 def clear_screen():
     """
@@ -23,6 +27,7 @@ def run_holdout_validation(X, Y, k):
             break
         except ValueError as e:
             print(f"Input non valido: {e}. Riprova.")
+            time.sleep(2)
 
     train_size = int(len(X) * (1 - test_perc))
     if k >= train_size:
@@ -46,12 +51,28 @@ def run_holdout_validation(X, Y, k):
     y_pred_proba = knn_model.test_proba(X_test)
     print("Valutazione completata.")
 
-    selected_metrics = select_metrics()
+    # Calcola le metriche finali
     metrics = calculate_metrics(Y_test, y_pred, y_pred_proba)
-    display_metrics(metrics, selected_metrics)
+
+    # Crea un prefisso unico per i file di output di questa esecuzione
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    prefix = f"holdout_k={k}_{timestamp}"
+
+    handler = HoldoutResultsHandler(
+        metrics=metrics,
+        y_true=Y_test,
+        y_pred=y_pred,
+        y_pred_proba=y_pred_proba,
+        filename_prefix=prefix
+    )
+    handler.save_results()
+
+    print("\n" + "="*60)
+    print("AVVISO: I risultati dettagliati e i grafici sono stati salvati.")
+    print("Controlla la cartella 'output' nella directory del progetto.")
+    print("="*60)
 
 def run_kfold_validation(X, Y, k):
-    """Esegue la K-Fold Cross Validation, richiedendo l'input finché non è valido."""
     while True:
         try:
             K_folds_str = input("Inserisci il numero di fold (K) per la Cross Validation: ")
@@ -61,6 +82,7 @@ def run_kfold_validation(X, Y, k):
             break
         except ValueError as e:
             print(f"Input non valido: {e}. Riprova.")
+            time.sleep(2)
 
     train_size_per_fold = int(len(X) * (1 - 1/K_folds))
     if k >= train_size_per_fold:
@@ -68,14 +90,25 @@ def run_kfold_validation(X, Y, k):
         return
 
     kfold_validator = KFoldCrossValidation(k=K_folds)
-    kfold_validator.evaluate(X.values.tolist(), Y.values.tolist(), KNN, k)
-    print("\nK-Fold Cross Validation completata.")
+    results = kfold_validator.evaluate(X.values.tolist(), Y.values.tolist(), KNN, k)
 
-def run_stratified_shuffle_split(X, Y, k):
-    pass
+    # Crea un prefisso unico per i file di output di questa esecuzione
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    prefix = f"kfold_k={k}_folds={K_folds}_{timestamp}"
+
+    handler = KFoldResultsHandler(
+        all_fold_metrics=results['all_fold_metrics'],
+        filename_prefix=prefix
+    )
+    handler.save_results()
+
+    print("\n" + "="*60)
+    print("AVVISO: I risultati dettagliati e i grafici sono stati salvati.")
+    print("Controlla la cartella 'output' nella directory del progetto.")
+    print("="*60)
+
 
 def main():
-    """Funzione principale che gestisce il menu interattivo."""
     if not os.path.exists('version_1.csv'):
         print("ERRORE: File 'version_1.csv' non trovato. Assicurati che sia nella root del progetto.")
         input("Premi Invio per uscire.")
@@ -84,16 +117,22 @@ def main():
     pd.set_option('display.max_rows', None)
     pd.set_option('display.max_columns', None)
 
+
+    # un po di stile per l'interfaccia
+    welcome_message = "Benvenuto nel programma di classificazione k-NN"
+    frame_line = "+" + "-" * (len(welcome_message) + 2) + "+"
+    print(frame_line)
+    print(f"| {welcome_message} |")
+    print(frame_line)
+    time.sleep(2)
+    clean_data()
     X, Y = load_data()
-    
-    clear_screen()
-    print("Benvenuto nel programma di classificazione k-NN.")
     print(f"Dataset caricato: {len(X)} campioni con {len(X.columns)} feature.")
+    time.sleep(2)
     input("\nPremi Invio per continuare al menu principale...")
 
     while True:
         clear_screen()
-        # Rimosso il '\n' iniziale per evitare output imprevisti
         print("="*50)
         print("MENU PRINCIPALE")
         print("="*50)
@@ -106,10 +145,12 @@ def main():
             choice = int(input("Inserisci la tua scelta (1-3): "))
         except ValueError:
             print("Scelta non valida. Inserisci un numero.")
+            time.sleep(1)
             continue
 
         if choice not in [1, 2, 3]:
             print("Scelta non valida. Riprova.")
+            time.sleep(1)
             continue
 
         while True:
@@ -121,14 +162,14 @@ def main():
                 break
             except ValueError as e:
                 print(f"Input non valido: {e}. Riprova.")
-        
+                time.sleep(1)
+
         if choice == 1:
             run_holdout_validation(X, Y, k_neighbors)
         elif choice == 2:
             run_kfold_validation(X, Y, k_neighbors)
         elif choice == 3:
-            run_stratified_shuffle_split(X, Y, k_neighbors)
-
+            pass
         another_run = input("\nVuoi eseguire un'altra operazione? (s/n): ").lower()
         if another_run != 's':
             clear_screen()
