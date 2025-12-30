@@ -141,52 +141,46 @@ class KFoldCrossValidation:
 
     def evaluate(self, X, Y, knn_model_class, k_neighbors):
         """
-        Esegue una validazione combinata: K-Fold Cross-Validation sul training set e
-        una valutazione finale su un set di holdout.
-
-        1. Holdout: Suddivide i dati iniziali in un set di training principale e un
-           set di test finale (holdout) che non verrà toccato fino alla fine.
-        2. K-Fold Cross Validation: Esegue la cross-validation sul set di training
-           principale per ottenere una stima robusta delle performance del modello.
-        3. Valutazione Finale: Addestra un modello finale su tutto il training set principale
-           e lo valuta sul set di holdout per ottenere le performance definitive.
+        Esegue una validazione K-Fold "pura" sull'intero dataset.
+        1. Suddivide l'INTERO dataset in K parti (fold).
+        2. Per ogni iterazione (fold), usa 1 parte come Test Set e le restanti K-1 come Training Set.
+        3. Calcola le metriche per ognuno dei K esperimenti e le restituisce.
         """
-        # 1. SUDDIVISIONE INIZIALE (HOLDOUT)
-        X_train_main, X_test_holdout, Y_train_main, Y_test_holdout = self.holdout_split(X, Y)
-
-        print(f"\n{'=' * 60}")
-        print("HOLDOUT: Dati divisi in Training Set e Test Set")
-        print(f"  Training samples: {len(X_train_main)}")
-        print(f"  Test samples (holdout): {len(X_test_holdout)}")
-        print(f"{'=' * 60}\n")
-
-        # 2. ESECUZIONE DELLA K-FOLD CROSS VALIDATION (sul training set principale)
-        folds = self.split_data(X_train_main, Y_train_main)
+        # 1. PREPARAZIONE PER LA K-FOLD CROSS VALIDATION
+        # Suddivide l'intero dataset (X, Y) in 'k' fold.
+        # Questo assicura che ogni singolo esempio del dataset venga usato esattamente una volta per il test.
+        folds = self.split_data(X, Y)
         all_fold_metrics = []
 
-        print(f"INIZIO K-FOLD CROSS VALIDATION (k={self.k}) sul Training Set...")
+        print(f"\n{'=' * 60}")
+        print(f"INIZIO K-FOLD CROSS VALIDATION (k={self.k})")
+        print(f"Totale campioni nel dataset: {len(X)}")
+        print(f"{'=' * 60}\n")
+
+        # 2. ESECUZIONE DELLA K-FOLD CROSS VALIDATION
+        # Itera su ogni fold. Ad ogni iterazione, un fold diverso viene usato come test set
+        # e i restanti k-1 fold vengono usati come training set.
         for fold_num, (X_train_fold, Y_train_fold, X_test_fold, Y_test_fold) in enumerate(folds, 1):
-            print(f"  - Fold {fold_num}/{self.k}")
+            print(f"  - Esperimento {fold_num}/{self.k}")
+            print(f"    Training samples: {len(X_train_fold)} | Test samples: {len(X_test_fold)}")
+
+            # Crea e addestra un nuovo modello KNN per questo specifico fold.
             knn_model = knn_model_class(X_train_fold, Y_train_fold, k_neighbors)
+
+            # Esegue le predizioni sul set di test del fold corrente.
             y_pred = knn_model.test(X_test_fold)
             y_pred_proba = knn_model.test_proba(X_test_fold)
+
+            # Calcola le metriche di performance per questo fold.
             fold_metrics = calculate_metrics(Y_test_fold, y_pred, y_pred_proba)
+
+            # Aggiunge le metriche del fold alla lista complessiva.
             all_fold_metrics.append(fold_metrics)
-        print("K-Fold Cross Validation completata.")
 
-        # 3. VALUTAZIONE FINALE SUL SET DI HOLDOUT
-        print("\nValutazione finale sul set di Holdout...")
-        final_model = knn_model_class(X_train_main, Y_train_main, k_neighbors)
-        y_pred_final = final_model.test(X_test_holdout)
-        y_pred_proba_final = final_model.test_proba(X_test_holdout)
-        final_metrics = calculate_metrics(Y_test_holdout, y_pred_final, y_pred_proba_final)
-        print("Valutazione finale completata.")
+        print("\nK-Fold Cross Validation completata.")
 
-        # 4. RESTITUZIONE DI TUTTI I RISULTATI
+        # 3. RESTITUZIONE DEI RISULTATI
+        # Ritorna un dizionario contenente solo la lista delle metriche per ogni fold.
         return {
-            "all_fold_metrics": all_fold_metrics,
-            "final_holdout_metrics": final_metrics,
-            "y_true_holdout": Y_test_holdout,
-            "y_pred_holdout": y_pred_final,
-            "y_pred_proba_holdout": y_pred_proba_final
+            "all_fold_metrics": all_fold_metrics
         }
