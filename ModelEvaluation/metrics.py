@@ -7,16 +7,19 @@ def build_confusion_matrix(y_true, y_pred):
     Assume che la classe con valore più alto sia positiva.
     """
     # Determina quale è la classe positiva (quella con valore più alto)
-
     # combina i valori di y_true (valori reali) e y_pred (valori predetti) in un unico insieme
     # (set) per ottenere tutte le classi uniche presenti.
-    unique_classes = sorted(set(y_true + y_pred))
-    if len(unique_classes) != 2:
-        raise ValueError("Le classi devono essere binarie (esattamente 2 classi)")
+    all_unique_classes = sorted(list(set(y_true) | set(y_pred)))
 
-    positive_class = max(unique_classes) # 4.0
-    negative_class = min(unique_classes) # 2.0
+    # Se nei dati reali e predetti compare una sola classe in totale, non è
+    # possibile costruire una matrice di confusione completa (es. TP, FN).
+    # Restituire zero per tutto è l'opzione più sicura per evitare crash
+    # e far sì che le metriche derivate (sens, spec) risultino 0.
+    if len(all_unique_classes) < 2:
+        return 0, 0, 0, 0  # tp, tn, fp, fn
 
+    positive_class = max(all_unique_classes)
+    negative_class = min(all_unique_classes)
     tp = tn = fp = fn = 0
 
     for true, predicted in zip(y_true, y_pred):
@@ -93,16 +96,18 @@ def calculate_geometric_mean(y_true, y_pred):
 def calculate_roc_curve(y_true, y_pred_proba):
     """
     curva ROC
-    Ritorna: - False Positive Rate e True Positive Rate
+    Ritorna: - False Positive Rate e True Positive Rate sotto forma di liste
     y_pred_proba: probabilità predette (valori tra 0 e 1)
     y_true: valori reali (classi binarie qualsiasi, es. 2 e 4)
     """
     # Determina quale è la classe positiva (quella con valore più alto)
-    unique_classes = sorted(set(y_true))
-    if len(unique_classes) != 2:
-        raise ValueError("Le classi devono essere binarie (esattamente 2 classi)")
+    true_unique_classes = sorted(set(y_true))
+    # Se nei dati reali c'è una sola classe, la curva ROC non è definita.
+    if len(true_unique_classes) < 2:
+        # Restituisce None per indicare che il calcolo non è possibile.
+        return None, None
 
-    positive_class = max(unique_classes)
+    positive_class = max(true_unique_classes)
 
     # Converte y_true a formato binario (0/1) dove 1 = classe positiva
     y_true_binary = [1 if y == positive_class else 0 for y in y_true]
@@ -151,7 +156,6 @@ def calculate_auc(fpr, tpr):
 def trapezoidal_integration(x, y):
     """
     Metodo dei trapezi per calcolare l'integrale numericamente
-    Utile per calcolare l'area sotto la curva (es. ROC-AUC)
     """
     area = 0
     for i in range(len(x) - 1):
@@ -165,10 +169,9 @@ def trapezoidal_integration(x, y):
 def calculate_metrics(y_true, y_pred, y_pred_proba=None):
     """
     Calcola tutte le metriche di valutazione
-
     y_true: valori reali
     y_pred: predizioni (binarie 0/1)
-    y_pred_proba: probabilità predette  ROC/AUC
+    y_pred_proba: probabilità predette ROC/AUC
     """
 
     metrics = {
@@ -177,17 +180,16 @@ def calculate_metrics(y_true, y_pred, y_pred_proba=None):
         'sensitivity': calculate_sensitivity(y_true, y_pred),
         'specificity': calculate_specificity(y_true, y_pred),
         'gmean': calculate_geometric_mean(y_true, y_pred),
-        'roc': None,
         'auc': None
     }
 
-    # # Se sono disponibili le probabilità, calcola ROC e AUC
+    # Se sono disponibili le probabilità, calcola ROC e AUC
     if y_pred_proba is not None:
         fpr, tpr = calculate_roc_curve(y_true, y_pred_proba)
-        auc = calculate_auc(fpr, tpr)
-
-        metrics['roc'] = {'fpr': fpr, 'tpr': tpr}
-        metrics['auc'] = auc
+        # Calcola l'AUC solo se la curva ROC è stata generata con successo
+        if fpr is not None and tpr is not None:
+            auc = calculate_auc(fpr, tpr)
+            metrics['auc'] = auc
 
     return metrics
 
@@ -237,7 +239,7 @@ def select_metrics():
     print("3. Sensitivity (Recall) - Capacità di rilevare i positivi")
     print("4. Specificity - Capacità di rilevare i negativi")
     print("5. Geometric Mean - Media geometrica di sensibilità e specificità")
-    print("6. AUC (Area Under the Curve) - Area sotto la curva ROC (richiede y_pred_proba)")
+    print("6. AUC (Area Under the Curve) - Area sotto la curva ROC")
     print("0. Seleziona tutte le metriche")
     print("=" * 60)
 
