@@ -33,6 +33,11 @@
     - Il valore di k (numero di vicini)
     - Il metodo di validazione (Holdout, K-fold Cross Validation, Stratified Shuffle Split)
     - Le metriche da calcolare
- 
-
-  
+ # Per la gestione dei pacchetti pip del venv è stato utilizzato pip-tools
+   - i pacchetti principali sono nel file requirements.in
+   - per generare il file requirements.txt :
+   > pip-compile requirements.in    
+ # Per inizializzare il venv
+   > pip install -r requirements.txt
+   > pip-sync
+   
