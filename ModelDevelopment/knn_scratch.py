@@ -70,21 +70,26 @@ class KNN:
         # la distanza euclidea tra i campioni di test forniti in x_test e tutti
         # i campioni di addestramento memorizzati in self.x_train.
 
-        # Determina quale è la classe positiva (quella con valore più alto)
+        # Identifica le classi uniche e assume che la classe con valore più alto sia la "positiva".
         unique_classes = list(set(self.y_train))
         positive_class = max(unique_classes)
 
         for dists in test_dists:
+            # Trova gli indici dei k vicini più prossimi (distanza minore).
             k_smallest = sorted(range(len(dists)), key=lambda i: dists[i])[:self.k]
+            
+            # Recupera le etichette di questi k vicini dal training set.
             labels = [self.y_train[i] for i in k_smallest]
+            
+            # Conta le occorrenze di ogni etichetta tra i vicini.
             label_counts = {}
             for label in labels:
                 if label in label_counts:
                     label_counts[label] += 1
                 else:
                     label_counts[label] = 1
-            # Calcola la probabilità della classe positiva
-            # Probabilità = numero di vicini positivi / numero totale di vicini
+            
+            # Calcola la probabilità della classe positiva come frazione dei vicini positivi su k.
             proba_positive = label_counts.get(positive_class, 0) / self.k
             y_test_proba.append(proba_positive)
 

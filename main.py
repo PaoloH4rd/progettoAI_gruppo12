@@ -98,7 +98,7 @@ def run_kfold_validation(X, Y, k):
 
     handler = KFoldResultsHandler(
         all_fold_metrics=results['all_fold_metrics'],
-        filename_prefix=prefix
+        filename_prefix=prefix,
     )
     handler.save_results()
 

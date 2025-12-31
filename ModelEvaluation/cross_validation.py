@@ -141,7 +141,7 @@ class KFoldCrossValidation:
 
     def evaluate(self, X, Y, knn_model_class, k_neighbors):
         """
-        Esegue una validazione K-Fold "pura" sull'intero dataset.
+        Esegue una validazione K-Fold  sull'intero dataset.
         1. Suddivide l'INTERO dataset in K parti (fold).
         2. Per ogni iterazione (fold), usa 1 parte come Test Set e le restanti K-1 come Training Set.
         3. Calcola le metriche per ognuno dei K esperimenti e le restituisce.

@@ -34,6 +34,7 @@ class BaseResultsHandler(ABC):
     def _plot_confusion_matrix(self):
         """Genera e salva il grafico della matrice di confusione."""
         try:
+            # Costruisce la matrice di confusione chiamando metrics
             tp, tn, fp, fn = build_confusion_matrix(self.y_true, self.y_pred)
             cm = [[tn, fp], [fn, tp]]
 
@@ -98,32 +99,27 @@ class HoldoutResultsHandler(BaseResultsHandler):
         except Exception as e:
             print(f"  - ERRORE nel salvataggio del file CSV: {e}")
 
+        #chiama la funzione base per plottare la matrice di confusione e la curva ROC
         self._plot_confusion_matrix()
         self._plot_roc_curve()
         print("--- Operazioni completate. ---")
         time.sleep(2)
 
 
-class KFoldResultsHandler:
+class KFoldResultsHandler(BaseResultsHandler):
     """
     Salva le metriche di ogni fold, le statistiche aggregate (media, std dev)
     e genera un grafico sulla distribuzione delle performance.
+    Genera inoltre la Matrice di Confusione e la Curva ROC aggregate (se i dati sono forniti).
     """
-    def __init__(self, all_fold_metrics, filename_prefix, output_dir='output'):
+    def __init__(self, all_fold_metrics, filename_prefix, output_dir='output',
+                 y_true_all=None, y_pred_all=None, y_pred_proba_all=None):
+        super().__init__(y_true_all, y_pred_all, y_pred_proba_all, filename_prefix, output_dir)
         self.all_fold_metrics = all_fold_metrics
-        self.filename_prefix = filename_prefix
-        self.output_dir = output_dir
-
-    def _create_output_dir(self):
-        """Crea la directory di output se non esiste."""
-        try:
-            if not os.path.exists(self.output_dir):
-                os.makedirs(self.output_dir)
-                print(f"  - Creata directory '{self.output_dir}' per i risultati.")
-        except OSError as e:
-            print(f"  - ERRORE nella creazione della directory '{self.output_dir}': {e}")
-            return False
-        return True
+        # Calcola AUC medio per visualizzazione nel grafico ROC (se disponibile)
+        aucs = [m.get('auc') for m in all_fold_metrics if m.get('auc') is not None]
+        if aucs:
+            self.auc_score = sum(aucs) / len(aucs)
 
     def _plot_performance_distribution(self):
         """Genera e salva un box plot della distribuzione delle metriche sulle fold."""
@@ -174,6 +170,11 @@ class KFoldResultsHandler:
             print(f"  - ERRORE nel salvataggio del file CSV: {e}")
 
         self._plot_performance_distribution()
+
+        # Genera i grafici aggregati solo se i dati concatenati sono stati passati
+        if self.y_true is not None and self.y_pred is not None:
+            self._plot_confusion_matrix()
+            self._plot_roc_curve()
+
         print("--- Operazioni completate. ---")
         time.sleep(2)
-
