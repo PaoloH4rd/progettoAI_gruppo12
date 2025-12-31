@@ -126,7 +126,7 @@ def main():
             time.sleep(1)
             continue
 
-        if choice not in [1, 2, 3]:
+        if choice not in [1, 2, 3, 4]:
             print("Scelta non valida. Riprova.")
             time.sleep(1)
             continue

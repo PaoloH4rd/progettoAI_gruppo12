@@ -44,7 +44,7 @@ class BaseResultsHandler(ABC):
 
     @abstractmethod
     def save_results(self):
-        """Metodo astratto che le sottoclassi devono implementare per salvare i risultati."""
+        """Metodo astratto per salvare i risultati."""
         pass
 
 
@@ -265,7 +265,6 @@ class MultiRunResultsHandler(BaseResultsHandler):
     def _plot_specific_graphs(self):
         """Metodo astratto per chiamare i plot specifici con i titoli corretti."""
         pass
-
 
 class KFoldResultsHandler(MultiRunResultsHandler):
     """
