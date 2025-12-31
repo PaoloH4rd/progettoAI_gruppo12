@@ -21,6 +21,10 @@ def load_data():
     # Definisce la variabile target
     target_col = 'classtype_v1'
 
+    # Conversione a monte: 2 (Benigno) -> 0, 4 (Maligno) -> 1
+    # Convertiamo prima in int per sicurezza (nel caso siano float 2.0/4.0) e poi mappiamo
+    df_clean[target_col] = df_clean[target_col].astype(int).map({2: 0, 4: 1})
+
     # Definisce le feature (tutte le colonne tranne la variabile target)
     feature_cols = [col for col in df_clean.columns if col not in [target_col]]
 

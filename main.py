@@ -1,8 +1,9 @@
 import os
 import pandas as pd
 import time
-from ModelEvaluation.cross_validation import kfold_validation
 from ModelEvaluation.holdout_validation import holdout_validation
+from ModelEvaluation.cross_validation import kfold_validation
+from ModelEvaluation.stratified_shuffle_split import stratified_shuffle_split_validation
 from Preprocessing.feature_target_variables import load_data
 from Preprocessing.data_cleaner import clean_data
 
@@ -58,21 +59,22 @@ def run_kfold_validation(X, Y, k):
 def run_stratified_shuffle_split(X, Y, k):
     while True:
         try:
-            n_esperimenti = input("Inserisci il numero di Esperimenti per la Stratified shuffle split Validation: ")
-            n_esperimenti = int(n_esperimenti)
-            if n_esperimenti <= 1:
+            n_experiments = input("Inserisci il numero di Esperimenti per la Stratified shuffle split Validation: ")
+            n_experiments = int(n_experiments)
+            if n_experiments <= 1:
                 raise ValueError("Il numero di Esperimenti deve essere maggiore di 1.")
             break
         except ValueError as e:
             print(f"Input non valido: {e}. Riprova.")
             time.sleep(2)
     # controllo se k= numero di vicini consultati dal KNN è minore della dimensione del training set in ogni esperimento
+    # la proporzione di test è fissa al 20%
     train_size_per_experiment = int(len(X) * (1 - 0.2))
     if k >= train_size_per_experiment:
         print(f"Errore: Il numero di vicini (k={k}) non può essere >="
               f" alla dimensione del training set in ogni esperimento ({train_size_per_experiment}).")
         return
-    # stratified_shuffle_split(X, Y, k, n_esperimenti)
+    stratified_shuffle_split_validation(X, Y, k, n_experiments)
 
 
 def main():

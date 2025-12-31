@@ -1,17 +1,10 @@
 import math
 
 def build_confusion_matrix(y_true, y_pred):
-
-    # Se nei dati reali e predetti compare una sola classe in totale, non è
-    # possibile costruire una matrice di confusione completa (es. TP, FN).
-    # Restituire zero per tutto è l'opzione più sicura per evitare crash
-    # e far sì che le metriche derivate (sens, spec) risultino 0.
-    all_unique_classes = sorted(list(set(y_true) | set(y_pred)))
-    if len(all_unique_classes) < 2:
-        return 0, 0, 0, 0
-
-    positive_class = max(all_unique_classes)
-    negative_class = min(all_unique_classes)
+    # 0 = Benigno (Negativo)
+    # 1 = Maligno (Positivo)
+    positive_class = 1
+    negative_class = 0
     tp = tn = fp = fn = 0
     """
     zip combina due liste elemento per elemento, creando coppie di valori corrispondenti. 
@@ -58,16 +51,12 @@ def calculate_geometric_mean(y_true, y_pred):
 
 def calculate_roc_curve(y_true, y_pred_proba):
     """Calcola i punti (FPR, TPR) per la curva ROC."""
-    true_unique_classes = sorted(set(y_true))
     # Se non ci sono almeno due classi (es. solo positivi o solo negativi),
     # non è possibile calcolare una curva ROC significativa.
-    if len(true_unique_classes) < 2:
+    if len(set(y_true)) < 2:
         return None, None
 
-    # Identifica la classe positiva come il valore massimo (convenzione comune).
-    positive_class = max(true_unique_classes)
-    # Binarizza le etichette reali: 1 per la classe positiva, 0 per le altre.
-    y_true_binary = [1 if y == positive_class else 0 for y in y_true]
+    y_true_binary = y_true
 
     # Ordina gli indici dei dati in base alla probabilità predetta, dal più alto al più basso (reverse=True).
     # Le predizioni con maggiore confidenza (più vicine a 1.0) verranno valutate per prime.
