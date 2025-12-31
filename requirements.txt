@@ -18,6 +18,7 @@ matplotlib==3.10.8
     #   seaborn
 numpy==2.4.0
     # via
+    #   -r requirements.in
     #   contourpy
     #   matplotlib
     #   pandas

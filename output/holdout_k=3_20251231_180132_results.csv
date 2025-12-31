@@ -1,0 +1,2 @@
+Validation_Type,accuracy,error_rate,sensitivity,specificity,gmean,auc
+Holdout_Test,0.9511,0.0489,0.9423,0.9557,0.9490,0.9939
