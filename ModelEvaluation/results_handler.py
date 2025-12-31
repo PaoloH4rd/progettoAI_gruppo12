@@ -115,6 +115,10 @@ class HoldoutResultsHandler(BaseResultsHandler):
         self.plot_roc_curve()
         print("--- Operazioni completate. ---")
         time.sleep(2)
+        print("\n" + "=" * 60)
+        print("AVVISO: I risultati dettagliati e i grafici sono stati salvati.")
+        print("Controlla la cartella 'output' nella directory del progetto.")
+        print("=" * 60)
 
 
 class KFoldResultsHandler(BaseResultsHandler):
@@ -208,7 +212,7 @@ class KFoldResultsHandler(BaseResultsHandler):
             for i, fold_data in enumerate(self.all_fold_raw_data):
                 fpr, tpr = calculate_roc_curve(fold_data['y_true'], fold_data['y_pred_proba'])
                 if fpr is not None and tpr is not None:
-                    plt.plot(fpr, tpr, lw=1, alpha=0.3, label=f'Fold {i+1}')
+                    plt.plot(fpr, tpr, lw=2, alpha=0.8, label=f'Fold {i+1}')
 
             # Plot della linea casuale
             plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Random', alpha=.8)
@@ -260,3 +264,7 @@ class KFoldResultsHandler(BaseResultsHandler):
 
         print("--- Operazioni completate. ---")
         time.sleep(2)
+        print("\n" + "=" * 60)
+        print("AVVISO: I risultati dettagliati e i grafici sono stati salvati.")
+        print("Controlla la cartella 'output' nella directory del progetto.")
+        print("=" * 60)

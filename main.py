@@ -34,11 +34,6 @@ def run_holdout_validation(X, Y, k):
 
     holdout_validation(X, Y, k, test_perc)
 
-    print("\n" + "="*60)
-    print("AVVISO: I risultati dettagliati e i grafici sono stati salvati.")
-    print("Controlla la cartella 'output' nella directory del progetto.")
-    print("="*60)
-
 def run_kfold_validation(X, Y, k):
     while True:
         try:
@@ -51,17 +46,33 @@ def run_kfold_validation(X, Y, k):
             print(f"Input non valido: {e}. Riprova.")
             time.sleep(2)
 
+    # controllo se k= numero di vicini consultati dal KNN è minore della dimensione del training set in ogni fold
     train_size_per_fold = int(len(X) * (1 - 1/K_folds))
     if k >= train_size_per_fold:
-        print(f"Errore: Il numero di vicini (k={k}) non può essere >= alla dimensione del training set in ogni fold ({train_size_per_fold}).")
+        print(f"Errore: Il numero di vicini (k={k}) non può essere >="
+              f" alla dimensione del training set in ogni fold ({train_size_per_fold}).")
         return
 
     kfold_validation(X, Y, k, K_folds)
 
-    print("\n" + "="*60)
-    print("AVVISO: I risultati dettagliati e i grafici sono stati salvati.")
-    print("Controlla la cartella 'output' nella directory del progetto.")
-    print("="*60)
+def run_stratified_shuffle_split(X, Y, k):
+    while True:
+        try:
+            n_esperimenti = input("Inserisci il numero di Esperimenti per la Stratified shuffle split Validation: ")
+            n_esperimenti = int(n_esperimenti)
+            if n_esperimenti <= 1:
+                raise ValueError("Il numero di Esperimenti deve essere maggiore di 1.")
+            break
+        except ValueError as e:
+            print(f"Input non valido: {e}. Riprova.")
+            time.sleep(2)
+    # controllo se k= numero di vicini consultati dal KNN è minore della dimensione del training set in ogni esperimento
+    train_size_per_experiment = int(len(X) * (1 - 0.2))
+    if k >= train_size_per_experiment:
+        print(f"Errore: Il numero di vicini (k={k}) non può essere >="
+              f" alla dimensione del training set in ogni esperimento ({train_size_per_experiment}).")
+        return
+    # stratified_shuffle_split(X, Y, k, n_esperimenti)
 
 
 def main():
@@ -111,6 +122,7 @@ def main():
 
         while True:
             try:
+                # sara chiesto il numero di vicini k per KNN in ogni caso, posso usare lo stesso input
                 k_neighbors_str = input("\nInserisci il numero di vicini (k) per KNN: ")
                 k_neighbors = int(k_neighbors_str)
                 if k_neighbors <= 0:
@@ -125,7 +137,7 @@ def main():
         elif choice == 2:
             run_kfold_validation(X, Y, k_neighbors)
         elif choice == 3:
-            pass
+            run_stratified_shuffle_split(X, Y, k_neighbors)
         another_run = input("\nVuoi eseguire un'altra operazione? (s/n): ").lower()
         if another_run != 's':
             clear_screen()
