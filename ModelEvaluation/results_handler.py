@@ -163,7 +163,7 @@ class KFoldResultsHandler(BaseResultsHandler):
 
         try:
             num_folds = len(self.all_fold_raw_data)
-            # Calcola righe e colonne per la griglia (es. 5 fold -> 2 righe, 3 colonne)
+            # Calcola righe e colonne per la griglia
             cols = 3 if num_folds > 4 else 2
             rows = math.ceil(num_folds / cols)
 
@@ -181,7 +181,7 @@ class KFoldResultsHandler(BaseResultsHandler):
                 axes[i].set_ylabel('Real')
 
             # Nasconde gli assi vuoti se num_folds non riempie la griglia
-            for j in range(i + 1, len(axes)):
+            for j in range(num_folds, len(axes)):
                 axes[j].axis('off')
 
             plt.suptitle(f'Matrici di Confusione per {num_folds}-Fold CV', fontsize=16)
