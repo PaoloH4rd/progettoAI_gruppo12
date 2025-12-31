@@ -1,5 +1,6 @@
 import os
 import time
+import math
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -31,44 +32,15 @@ class BaseResultsHandler(ABC):
             return False
         return True
 
-    def _plot_confusion_matrix(self):
-        """Genera e salva il grafico della matrice di confusione."""
-        try:
-            # Costruisce la matrice di confusione chiamando metrics
-            tp, tn, fp, fn = build_confusion_matrix(self.y_true, self.y_pred)
-            cm = [[tn, fp], [fn, tp]]
+    @abstractmethod
+    def plot_confusion_matrix(self):
+        """Metodo astratto per generare la matrice di confusione."""
+        pass
 
-            plt.figure(figsize=(8, 6))
-            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Benigno', 'Maligno'], yticklabels=['Benigno', 'Maligno'])
-            plt.title('Matrice di Confusione (sul Test Set)')
-            plt.xlabel('Classe Predetta')
-            plt.ylabel('Classe Reale')
-            filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_confusion_matrix.png')
-            plt.savefig(filepath)
-            plt.close()
-            print(f"  - Grafico '{filepath}' salvato correttamente.")
-        except Exception as e:
-            print(f"  - ERRORE nella generazione della matrice di confusione: {e}")
-
-    def _plot_roc_curve(self):
-        """Genera e salva il grafico della curva ROC."""
-        try:
-            fpr, tpr = calculate_roc_curve(self.y_true, self.y_pred_proba)
-            if fpr is not None and tpr is not None:
-                plt.figure(figsize=(8, 6))
-                plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'Curva ROC (AUC = {self.auc_score:.4f})')
-                plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-                plt.xlabel('False Positive Rate')
-                plt.ylabel('True Positive Rate')
-                plt.title('Curva ROC (sul Test Set)')
-                plt.legend(loc='lower right')
-                plt.grid(True)
-                filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_roc_curve.png')
-                plt.savefig(filepath)
-                plt.close()
-                print(f"  - Grafico '{filepath}' salvato correttamente.")
-        except Exception as e:
-            print(f"  - ERRORE nella generazione della curva ROC: {e}")
+    @abstractmethod
+    def plot_roc_curve(self):
+        """Metodo astratto per generare la curva ROC."""
+        pass
 
     @abstractmethod
     def save_results(self):
@@ -82,6 +54,45 @@ class HoldoutResultsHandler(BaseResultsHandler):
         super().__init__(y_true, y_pred, y_pred_proba, filename_prefix, output_dir)
         self.metrics = metrics
         self.auc_score = metrics.get('auc') if metrics.get('auc') is not None else 0.0
+
+    def plot_confusion_matrix(self):
+        """Genera una singola matrice di confusione."""
+        try:
+            tp, tn, fp, fn = build_confusion_matrix(self.y_true, self.y_pred)
+            cm = [[tn, fp], [fn, tp]]
+
+            plt.figure(figsize=(8, 6))
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                        xticklabels=['Benigno', 'Maligno'], yticklabels=['Benigno', 'Maligno'])
+            plt.title('Matrice di Confusione (Holdout)')
+            plt.xlabel('Classe Predetta')
+            plt.ylabel('Classe Reale')
+            filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_confusion_matrix.png')
+            plt.savefig(filepath)
+            plt.close()
+            print(f"  - Grafico '{filepath}' salvato correttamente.")
+        except Exception as e:
+            print(f"  - ERRORE nella generazione della matrice di confusione: {e}")
+
+    def plot_roc_curve(self):
+        """Genera una singola curva ROC."""
+        try:
+            fpr, tpr = calculate_roc_curve(self.y_true, self.y_pred_proba)
+            if fpr is not None and tpr is not None:
+                plt.figure(figsize=(8, 6))
+                plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'Curva ROC (AUC = {self.auc_score:.4f})')
+                plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+                plt.xlabel('False Positive Rate')
+                plt.ylabel('True Positive Rate')
+                plt.title('Curva ROC (Holdout)')
+                plt.legend(loc='lower right')
+                plt.grid(True)
+                filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_roc_curve.png')
+                plt.savefig(filepath)
+                plt.close()
+                print(f"  - Grafico '{filepath}' salvato correttamente.")
+        except Exception as e:
+            print(f"  - ERRORE nella generazione della curva ROC: {e}")
 
     def save_results(self):
         """Salva il CSV e i grafici per la validazione Holdout."""
@@ -100,8 +111,8 @@ class HoldoutResultsHandler(BaseResultsHandler):
             print(f"  - ERRORE nel salvataggio del file CSV: {e}")
 
         #chiama la funzione base per plottare la matrice di confusione e la curva ROC
-        self._plot_confusion_matrix()
-        self._plot_roc_curve()
+        self.plot_confusion_matrix()
+        self.plot_roc_curve()
         print("--- Operazioni completate. ---")
         time.sleep(2)
 
@@ -113,9 +124,10 @@ class KFoldResultsHandler(BaseResultsHandler):
     Genera inoltre la Matrice di Confusione e la Curva ROC aggregate (se i dati sono forniti).
     """
     def __init__(self, all_fold_metrics, filename_prefix, output_dir='output',
-                 y_true_all=None, y_pred_all=None, y_pred_proba_all=None):
+                 y_true_all=None, y_pred_all=None, y_pred_proba_all=None, all_fold_raw_data=None):
         super().__init__(y_true_all, y_pred_all, y_pred_proba_all, filename_prefix, output_dir)
         self.all_fold_metrics = all_fold_metrics
+        self.all_fold_raw_data = all_fold_raw_data if all_fold_raw_data is not None else []
         # Calcola AUC medio per visualizzazione nel grafico ROC (se disponibile)
         aucs = [m.get('auc') for m in all_fold_metrics if m.get('auc') is not None]
         if aucs:
@@ -140,6 +152,77 @@ class KFoldResultsHandler(BaseResultsHandler):
             print(f"  - Grafico '{filepath}' salvato correttamente.")
         except Exception as e:
             print(f"  - ERRORE nella generazione del box plot delle performance: {e}")
+
+    def plot_confusion_matrix(self):
+        """
+        Genera una griglia di matrici di confusione, una per ogni fold.
+        Questo fornisce una visione compatta delle performance su ogni split.
+        """
+        if not self.all_fold_raw_data:
+            return
+
+        try:
+            num_folds = len(self.all_fold_raw_data)
+            # Calcola righe e colonne per la griglia (es. 5 fold -> 2 righe, 3 colonne)
+            cols = 3 if num_folds > 4 else 2
+            rows = math.ceil(num_folds / cols)
+
+            fig, axes = plt.subplots(rows, cols, figsize=(5 * cols, 4 * rows))
+            axes = axes.flatten() # Appiattisce l'array di assi per iterarci facilmente
+
+            for i, fold_data in enumerate(self.all_fold_raw_data):
+                tp, tn, fp, fn = build_confusion_matrix(fold_data['y_true'], fold_data['y_pred'])
+                cm = [[tn, fp], [fn, tp]]
+
+                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[i], cbar=False,
+                            xticklabels=['B', 'M'], yticklabels=['B', 'M'])
+                axes[i].set_title(f'Fold {i + 1}')
+                axes[i].set_xlabel('Pred')
+                axes[i].set_ylabel('Real')
+
+            # Nasconde gli assi vuoti se num_folds non riempie la griglia
+            for j in range(i + 1, len(axes)):
+                axes[j].axis('off')
+
+            plt.suptitle(f'Matrici di Confusione per {num_folds}-Fold CV', fontsize=16)
+            plt.tight_layout()
+            filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_folds_confusion_matrix.png')
+            plt.savefig(filepath)
+            plt.close()
+            print(f"  - Grafico '{filepath}' salvato correttamente.")
+        except Exception as e:
+            print(f"  - ERRORE nella generazione delle matrici di confusione K-Fold: {e}")
+
+    def plot_roc_curve(self):
+        """
+        Genera un grafico con tutte le curve ROC dei singoli fold sovrapposte (Spaghetti Plot).
+        Mostra la variabilità del modello tra i diversi fold.
+        """
+        if not self.all_fold_raw_data:
+            return
+
+        try:
+            plt.figure(figsize=(10, 8))
+
+            # Plot delle curve per ogni singolo fold
+            for i, fold_data in enumerate(self.all_fold_raw_data):
+                fpr, tpr = calculate_roc_curve(fold_data['y_true'], fold_data['y_pred_proba'])
+                if fpr is not None and tpr is not None:
+                    plt.plot(fpr, tpr, lw=1, alpha=0.3, label=f'Fold {i+1}')
+
+            # Plot della linea casuale
+            plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Random', alpha=.8)
+
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title(f'Curve ROC per {len(self.all_fold_raw_data)}-Fold CV (AUC Medio = {self.auc_score:.4f})')
+            plt.legend(loc="lower right")
+            filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_folds_roc_curve.png')
+            plt.savefig(filepath)
+            plt.close()
+            print(f"  - Grafico '{filepath}' salvato correttamente.")
+        except Exception as e:
+            print(f"  - ERRORE nella generazione delle curve ROC K-Fold: {e}")
 
     def save_results(self):
         """Salva il CSV e i grafici per la validazione K-Fold."""
@@ -172,9 +255,8 @@ class KFoldResultsHandler(BaseResultsHandler):
         self._plot_performance_distribution()
 
         # Genera i grafici aggregati solo se i dati concatenati sono stati passati
-        if self.y_true is not None and self.y_pred is not None:
-            self._plot_confusion_matrix()
-            self._plot_roc_curve()
+        self.plot_confusion_matrix()
+        self.plot_roc_curve()
 
         print("--- Operazioni completate. ---")
         time.sleep(2)

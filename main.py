@@ -1,9 +1,7 @@
 import os
 import pandas as pd
 import time
-from ModelDevelopment.knn_scratch import KNN
-from ModelEvaluation.cross_validation import KFoldCrossValidation
-from ModelEvaluation.results_handler import KFoldResultsHandler
+from ModelEvaluation.cross_validation import kfold_validation
 from ModelEvaluation.holdout_validation import holdout_validation
 from Preprocessing.feature_target_variables import load_data
 from Preprocessing.data_cleaner import clean_data
@@ -58,21 +56,7 @@ def run_kfold_validation(X, Y, k):
         print(f"Errore: Il numero di vicini (k={k}) non può essere >= alla dimensione del training set in ogni fold ({train_size_per_fold}).")
         return
 
-    kfold_validator = KFoldCrossValidation(k=K_folds)
-    results = kfold_validator.evaluate(X.values.tolist(), Y.values.tolist(), KNN, k)
-
-    # Crea un prefisso unico per i file di output di questa esecuzione
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    prefix = f"kfold_k={k}_folds={K_folds}_{timestamp}"
-
-    handler = KFoldResultsHandler(
-        all_fold_metrics=results['all_fold_metrics'],
-        filename_prefix=prefix,
-        y_true_all=results.get('y_true'),
-        y_pred_all=results.get('y_pred'),
-        y_pred_proba_all=results.get('y_pred_proba')
-    )
-    handler.save_results()
+    kfold_validation(X, Y, k, K_folds)
 
     print("\n" + "="*60)
     print("AVVISO: I risultati dettagliati e i grafici sono stati salvati.")
