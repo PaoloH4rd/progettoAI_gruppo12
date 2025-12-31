@@ -23,7 +23,7 @@ def holdout_validation(X, Y, k, test_perc):
     # Assicura che i dati siano in formato lista (se passati come DataFrame/Series da pandas)
     X_data = X.values.tolist() if hasattr(X, 'values') else X
     Y_data = Y.values.tolist() if hasattr(Y, 'values') else Y
-    random.seed(42)
+    random.seed(50)
     # Inizializza un dizionario speciale (defaultdict)
     # Un defaultdict(list) si comporta come un dizionario normale, ma se si tenta di accedere a una chiave che non esiste, la crea automaticamente con una lista vuota come valore.
     # Questo è utile per evitare di dover controllare ogni volta se una chiave (la classe) è già presente nel dizionario prima di aggiungere un elemento.

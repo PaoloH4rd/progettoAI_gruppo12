@@ -3,7 +3,7 @@ import pandas as pd
 import time
 from ModelEvaluation.holdout_validation import holdout_validation
 from ModelEvaluation.cross_validation import kfold_validation
-from ModelEvaluation.stratified_shuffle_split import stratified_shuffle_split_validation
+from ModelEvaluation.stratified_shuffle_split_validation import stratified_shuffle_split_validation
 from Preprocessing.feature_target_variables import load_data
 from Preprocessing.data_cleaner import clean_data
 
@@ -95,7 +95,15 @@ def main():
     print(frame_line)
     time.sleep(2)
     clean_data()
-    X, Y = load_data()
+
+    try:
+        X, Y = load_data()
+    except ValueError as e:
+        # controllo numero di classi target diverso da 2
+        print(f"\nERRORE CRITICO: {e}")
+        input("Premi Invio per terminare il programma...")
+        return
+
     print(f"Dataset caricato: {len(X)} campioni con {len(X.columns)} feature.")
     time.sleep(2)
     input("\nPremi Invio per continuare al menu principale...")
@@ -108,6 +116,7 @@ def main():
         print("1. Esegui validazione Holdout")
         print("2. Esegui K-Fold Cross Validation (Metodo B)")
         print("3. Esegui Stratified Shuffle Split (Metodo C)")
+        print("4. Chiudi il programma ")
         print("="*50)
 
         try:
@@ -140,7 +149,12 @@ def main():
             run_kfold_validation(X, Y, k_neighbors)
         elif choice == 3:
             run_stratified_shuffle_split(X, Y, k_neighbors)
+        else : # scelta 4 esci
+            clear_screen()
+            print("Uscita dal programma. Arrivederci!")
+            break
         another_run = input("\nVuoi eseguire un'altra operazione? (s/n): ").lower()
+
         if another_run != 's':
             clear_screen()
             print("Uscita dal programma. Arrivederci!")
