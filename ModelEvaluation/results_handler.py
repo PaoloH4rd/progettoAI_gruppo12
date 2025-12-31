@@ -115,33 +115,40 @@ class HoldoutResultsHandler(BaseResultsHandler):
         self.plot_roc_curve()
         print("--- Operazioni completate. ---")
         time.sleep(2)
+        print("\n" + "=" * 60)
+        print("AVVISO: I risultati dettagliati e i grafici sono stati salvati.")
+        print("Controlla la cartella 'output' nella directory del progetto.")
+        print("=" * 60)
 
 
-class KFoldResultsHandler(BaseResultsHandler):
+class MultiRunResultsHandler(BaseResultsHandler):
     """
-    Salva le metriche di ogni fold, le statistiche aggregate (media, std dev)
-    e genera un grafico sulla distribuzione delle performance.
-    Genera inoltre la Matrice di Confusione e la Curva ROC aggregate (se i dati sono forniti).
+    Classe base per handler che gestiscono risultati multipli (es. K-Fold, Shuffle Split).
+    Centralizza la logica di plotting e salvataggio per validazioni iterative multiple.
+    Evito  la duplicazione del codice tra K-Fold e Stratified Shuffle Split.
+    Cambio solo i titoli e le etichette nei metodi specifici (plot specifici).
     """
-    def __init__(self, all_fold_metrics, filename_prefix, output_dir='output',
-                 y_true_all=None, y_pred_all=None, y_pred_proba_all=None, all_fold_raw_data=None):
+    def __init__(self, metrics_list, raw_data_list, filename_prefix, output_dir='output', 
+                 run_label='Run', y_true_all=None, y_pred_all=None, y_pred_proba_all=None):
         super().__init__(y_true_all, y_pred_all, y_pred_proba_all, filename_prefix, output_dir)
-        self.all_fold_metrics = all_fold_metrics
-        self.all_fold_raw_data = all_fold_raw_data if all_fold_raw_data is not None else []
-        # Calcola AUC medio per visualizzazione nel grafico ROC (se disponibile)
-        aucs = [m.get('auc') for m in all_fold_metrics if m.get('auc') is not None]
+        self.metrics_list = metrics_list
+        self.raw_data_list = raw_data_list if raw_data_list is not None else []
+        self.run_label = run_label
+        
+        # Calcola AUC medio
+        aucs = [m.get('auc') for m in metrics_list if m.get('auc') is not None]
         if aucs:
             self.auc_score = sum(aucs) / len(aucs)
 
-    def _plot_performance_distribution(self):
-        """Genera e salva un box plot della distribuzione delle metriche sulle fold."""
+    def _plot_performance_distribution(self, title):
+        """Genera e salva un box plot della distribuzione delle metriche."""
         try:
-            if not self.all_fold_metrics:
+            if not self.metrics_list:
                 return
-            df_folds = pd.DataFrame(self.all_fold_metrics)
+            df_runs = pd.DataFrame(self.metrics_list)
             plt.figure(figsize=(12, 7))
-            sns.boxplot(data=df_folds[['accuracy', 'sensitivity', 'specificity', 'gmean', 'auc']])
-            plt.title('Distribuzione delle Performance sulle k-Fold')
+            sns.boxplot(data=df_runs[['accuracy', 'sensitivity', 'specificity', 'gmean', 'auc']])
+            plt.title(title)
             plt.ylabel('Punteggio')
             plt.xticks(rotation=10)
             plt.grid(True)
@@ -153,110 +160,138 @@ class KFoldResultsHandler(BaseResultsHandler):
         except Exception as e:
             print(f"  - ERRORE nella generazione del box plot delle performance: {e}")
 
-    def plot_confusion_matrix(self):
+    def plot_confusion_matrix(self, title_template="Matrici di Confusione", subplot_label_template="Run"):
         """
-        Genera una griglia di matrici di confusione, una per ogni fold.
-        Questo fornisce una visione compatta delle performance su ogni split.
+        Genera una griglia di matrici di confusione.
         """
-        if not self.all_fold_raw_data:
+        if not self.raw_data_list:
             return
 
         try:
-            num_folds = len(self.all_fold_raw_data)
-            # Calcola righe e colonne per la griglia
-            cols = 3 if num_folds > 4 else 2
-            rows = math.ceil(num_folds / cols)
+            num_runs = len(self.raw_data_list)
+            cols = 3 if num_runs > 4 else 2
+            rows = math.ceil(num_runs / cols)
 
             fig, axes = plt.subplots(rows, cols, figsize=(5 * cols, 4 * rows))
-            axes = axes.flatten() # Appiattisce l'array di assi per iterarci facilmente
+            axes = axes.flatten()
 
-            for i, fold_data in enumerate(self.all_fold_raw_data):
-                tp, tn, fp, fn = build_confusion_matrix(fold_data['y_true'], fold_data['y_pred'])
+            for i, run_data in enumerate(self.raw_data_list):
+                tp, tn, fp, fn = build_confusion_matrix(run_data['y_true'], run_data['y_pred'])
                 cm = [[tn, fp], [fn, tp]]
 
                 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[i], cbar=False,
                             xticklabels=['B', 'M'], yticklabels=['B', 'M'])
-                axes[i].set_title(f'Fold {i + 1}')
+                axes[i].set_title(f'{subplot_label_template} {i + 1}')
                 axes[i].set_xlabel('Pred')
                 axes[i].set_ylabel('Real')
 
-            # Nasconde gli assi vuoti se num_folds non riempie la griglia
-            for j in range(num_folds, len(axes)):
+            for j in range(num_runs, len(axes)):
                 axes[j].axis('off')
 
-            plt.suptitle(f'Matrici di Confusione per {num_folds}-Fold CV', fontsize=16)
+            plt.suptitle(title_template.format(n=num_runs), fontsize=16)
             plt.tight_layout()
-            filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_folds_confusion_matrix.png')
+            filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_runs_confusion_matrix.png')
             plt.savefig(filepath)
             plt.close()
             print(f"  - Grafico '{filepath}' salvato correttamente.")
         except Exception as e:
-            print(f"  - ERRORE nella generazione delle matrici di confusione K-Fold: {e}")
+            print(f"  - ERRORE nella generazione delle matrici di confusione multiple: {e}")
 
-    def plot_roc_curve(self):
+    def plot_roc_curve(self, title_template="Curve ROC", label_template="Run"):
         """
-        Genera un grafico con tutte le curve ROC dei singoli fold sovrapposte (Spaghetti Plot).
-        Mostra la variabilità del modello tra i diversi fold.
+        Genera un grafico con tutte le curve ROC sovrapposte.
         """
-        if not self.all_fold_raw_data:
+        if not self.raw_data_list:
             return
 
         try:
             plt.figure(figsize=(10, 8))
 
-            # Plot delle curve per ogni singolo fold
-            for i, fold_data in enumerate(self.all_fold_raw_data):
-                fpr, tpr = calculate_roc_curve(fold_data['y_true'], fold_data['y_pred_proba'])
+            for i, run_data in enumerate(self.raw_data_list):
+                fpr, tpr = calculate_roc_curve(run_data['y_true'], run_data['y_pred_proba'])
                 if fpr is not None and tpr is not None:
-                    plt.plot(fpr, tpr, lw=1, alpha=0.3, label=f'Fold {i+1}')
+                    plt.plot(fpr, tpr, lw=2, alpha=0.8, label=f'{label_template} {i+1}')
 
-            # Plot della linea casuale
             plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Random', alpha=.8)
 
             plt.xlabel('False Positive Rate')
             plt.ylabel('True Positive Rate')
-            plt.title(f'Curve ROC per {len(self.all_fold_raw_data)}-Fold CV (AUC Medio = {self.auc_score:.4f})')
+            plt.title(title_template.format(n=len(self.raw_data_list), auc=self.auc_score))
             plt.legend(loc="lower right")
-            filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_folds_roc_curve.png')
+            filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_runs_roc_curve.png')
             plt.savefig(filepath)
             plt.close()
             print(f"  - Grafico '{filepath}' salvato correttamente.")
         except Exception as e:
-            print(f"  - ERRORE nella generazione delle curve ROC K-Fold: {e}")
+            print(f"  - ERRORE nella generazione delle curve ROC multiple: {e}")
 
     def save_results(self):
-        """Salva il CSV e i grafici per la validazione K-Fold."""
-        print("\n--- Salvataggio risultati (K-Fold Pura) in corso... ---")
+        """Salva il CSV e i grafici per la validazione multipla."""
+        print(f"\n--- Salvataggio risultati ({self.run_label}s) ---")
         if not self._create_output_dir():
             return
 
         try:
             records = []
-            for i, fold_metrics in enumerate(self.all_fold_metrics):
-                record = fold_metrics.copy()
-                record['Fold'] = f'Fold {i+1}'
+            for i, metrics in enumerate(self.metrics_list):
+                record = metrics.copy()
+                record[self.run_label] = f'{self.run_label} {i+1}'
                 records.append(record)
-            df_folds = pd.DataFrame(records).set_index('Fold')
-
-            numeric_df = df_folds.select_dtypes(include='number')
+            df_runs = pd.DataFrame(records).set_index(self.run_label)
+            numeric_df = df_runs.select_dtypes(include='number')
             avg_metrics = numeric_df.mean().to_dict()
             std_metrics = numeric_df.std().to_dict()
-            avg_metrics['Fold'] = 'Average'
-            std_metrics['Fold'] = 'Std_Dev'
-            df_summary = pd.DataFrame([avg_metrics, std_metrics]).set_index('Fold')
-
-            df_results = pd.concat([df_folds, df_summary])
+            avg_metrics[self.run_label] = 'Average'
+            std_metrics[self.run_label] = 'Std_Dev'
+            df_summary = pd.DataFrame([avg_metrics, std_metrics]).set_index(self.run_label)
+            df_results = pd.concat([df_runs, df_summary])
             filepath = os.path.join(self.output_dir, f'{self.filename_prefix}_results.csv')
             df_results.to_csv(filepath, float_format='%.4f')
             print(f"  - Risultati salvati correttamente in '{filepath}'")
+
         except Exception as e:
+
             print(f"  - ERRORE nel salvataggio del file CSV: {e}")
 
-        self._plot_performance_distribution()
-
-        # Genera i grafici aggregati solo se i dati concatenati sono stati passati
-        self.plot_confusion_matrix()
-        self.plot_roc_curve()
-
+        self._plot_specific_graphs()
         print("--- Operazioni completate. ---")
         time.sleep(2)
+        print("\n" + "=" * 60)
+        print("AVVISO: I risultati dettagliati e i grafici sono stati salvati.")
+        print("Controlla la cartella 'output' nella directory del progetto.")
+        print("=" * 60)
+    
+    @abstractmethod
+    def _plot_specific_graphs(self):
+        """Metodo astratto per chiamare i plot specifici con i titoli corretti."""
+        pass
+
+
+class KFoldResultsHandler(MultiRunResultsHandler):
+    """
+    Handler specifico per K-Fold Cross Validation.
+    """
+    def __init__(self, all_fold_metrics, filename_prefix, output_dir='output',
+                 y_true_all=None, y_pred_all=None, y_pred_proba_all=None, all_fold_raw_data=None):
+        super().__init__(all_fold_metrics, all_fold_raw_data, filename_prefix, output_dir, 
+                         run_label='Fold', y_true_all=y_true_all, y_pred_all=y_pred_all, y_pred_proba_all=y_pred_proba_all)
+
+    def _plot_specific_graphs(self):
+        self._plot_performance_distribution('Distribuzione delle Performance sulle k-Fold')
+        self.plot_confusion_matrix(title_template='Matrici di Confusione per {n}-Fold CV', subplot_label_template='Fold')
+        self.plot_roc_curve(title_template='Curve ROC per {n}-Fold CV (AUC Medio = {auc:.4f})', label_template='Fold')
+
+
+class StratifiedShuffleSplitResultsHandler(MultiRunResultsHandler):
+    """
+    Handler specifico per Stratified Shuffle Split.
+    """
+    def __init__(self, all_experiment_metrics, filename_prefix, output_dir='output',
+                 y_true_all=None, y_pred_all=None, y_pred_proba_all=None, all_experiment_raw_data=None):
+        super().__init__(all_experiment_metrics, all_experiment_raw_data, filename_prefix, output_dir, 
+                         run_label='Experiment', y_true_all=y_true_all, y_pred_all=y_pred_all, y_pred_proba_all=y_pred_proba_all)
+
+    def _plot_specific_graphs(self):
+        self._plot_performance_distribution('Distribuzione delle Performance su Stratified Shuffle Split')
+        self.plot_confusion_matrix(title_template='Matrici di Confusione per {n} Esperimenti', subplot_label_template='Exp')
+        self.plot_roc_curve(title_template='Curve ROC per {n} Esperimenti (AUC Medio = {auc:.4f})', label_template='Exp')

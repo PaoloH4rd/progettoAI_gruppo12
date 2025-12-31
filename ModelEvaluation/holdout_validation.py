@@ -23,9 +23,7 @@ def holdout_validation(X, Y, k, test_perc):
     # Assicura che i dati siano in formato lista (se passati come DataFrame/Series da pandas)
     X_data = X.values.tolist() if hasattr(X, 'values') else X
     Y_data = Y.values.tolist() if hasattr(Y, 'values') else Y
-
-    random.seed(42) # Seed fisso per riproducibilità
-
+    random.seed(50)
     # Inizializza un dizionario speciale (defaultdict)
     # Un defaultdict(list) si comporta come un dizionario normale, ma se si tenta di accedere a una chiave che non esiste, la crea automaticamente con una lista vuota come valore.
     # Questo è utile per evitare di dover controllare ogni volta se una chiave (la classe) è già presente nel dizionario prima di aggiungere un elemento.
@@ -34,19 +32,19 @@ def holdout_validation(X, Y, k, test_perc):
     # Raggruppa gli indici dei dati per classe
     # Itera su tutta la lista delle etichette (Y), tenendo traccia sia dell'indice (i) che del valore dell'etichetta (label) per ogni campione.
     for i, label in enumerate(Y_data):
-        # Usa l'etichetta (es. 2 per 'Benigno', 4 per 'Maligno') come chiave del dizionario
+        # Usa l'etichetta (0 per 'Benigno', 1 per 'Maligno') come chiave del dizionario
         # e aggiunge l'indice (la posizione) del campione a quella lista.
         # Alla fine di questo ciclo, avremo un dizionario simile a questo:
         # {
-        #    2: [0, 2, 5, ...],  <-- Tutti gli indici dei campioni benigni
-        #    4: [1, 3, 4, ...]   <-- Tutti gli indici dei campioni maligni
+        #    0: [0, 2, 5, ...],  <-- Tutti gli indici dei campioni benigni
+        #    1: [1, 3, 4, ...]   <-- Tutti gli indici dei campioni maligni
         # }
         indices_by_class[label].append(i)
 
     X_train, Y_train, X_test, Y_test = [], [], [], []
 
     # Suddivisione stratificata per ogni classe
-    # Itera su ogni classe (es. 2 e 4) e sulla lista di indici corrispondenti.
+    # Itera su ogni classe (0 e 1) e sulla lista di indici corrispondenti.
     for label, indices in indices_by_class.items():
         # Mescola gli indici di quella classe per garantire una selezione casuale.
         random.shuffle(indices)
