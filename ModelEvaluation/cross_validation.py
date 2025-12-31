@@ -1,5 +1,8 @@
+import time
 import random
 
+from ModelDevelopment.knn_scratch import KNN
+from ModelEvaluation.results_handler import KFoldResultsHandler
 from .metrics import calculate_metrics
 
 
@@ -78,6 +81,7 @@ class KFoldCrossValidation:
         # Questo assicura che ogni singolo esempio del dataset venga usato esattamente una volta per il test.
         folds = self.split_data(X, Y)
         all_fold_metrics = []
+        all_fold_raw_data = []
 
         print(f"\n{'=' * 60}")
         print(f"INIZIO K-FOLD CROSS VALIDATION (k={self.k})")
@@ -104,10 +108,50 @@ class KFoldCrossValidation:
             # Aggiunge le metriche del fold alla lista complessiva.
             all_fold_metrics.append(fold_metrics)
 
+            # Salva i dati grezzi per i plot specifici del fold
+            all_fold_raw_data.append({
+                'y_true': Y_test_fold,
+                'y_pred': y_pred,
+                'y_pred_proba': y_pred_proba
+            })
+
         print("\nK-Fold Cross Validation completata.")
 
         # 3. RESTITUZIONE DEI RISULTATI
         # Ritorna un dizionario contenente solo la lista delle metriche per ogni fold.
         return {
-            "all_fold_metrics": all_fold_metrics
+            "all_fold_metrics": all_fold_metrics,
+            "all_fold_raw_data": all_fold_raw_data
         }
+
+
+def kfold_validation(X, Y, k, K_folds):
+    """
+    Esegue il workflow completo di validazione K-Fold.
+
+    Args:
+        X: Features (DataFrame o lista di liste)
+        Y: Target (Series o lista)
+        k: Numero di vicini per KNN
+        K_folds: Numero di fold
+    """
+    # Assicura che i dati siano in formato lista
+    X_data = X.values.tolist() if hasattr(X, 'values') else X
+    Y_data = Y.values.tolist() if hasattr(Y, 'values') else Y
+
+    kfold_validator = KFoldCrossValidation(k=K_folds)
+    results = kfold_validator.evaluate(X_data, Y_data, KNN, k)
+
+    # Crea un prefisso unico per i file di output di questa esecuzione
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    prefix = f"kfold_k={k}_folds={K_folds}_{timestamp}"
+
+    handler = KFoldResultsHandler(
+        all_fold_metrics=results['all_fold_metrics'],
+        all_fold_raw_data=results['all_fold_raw_data'],
+        filename_prefix=prefix,
+        y_true_all=results.get('y_true'),
+        y_pred_all=results.get('y_pred'),
+        y_pred_proba_all=results.get('y_pred_proba')
+    )
+    handler.save_results()
