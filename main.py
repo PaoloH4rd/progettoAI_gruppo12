@@ -3,8 +3,8 @@ import pandas as pd
 import time
 from ModelDevelopment.knn_scratch import KNN
 from ModelEvaluation.cross_validation import KFoldCrossValidation
-from ModelEvaluation.metrics import calculate_metrics
-from ModelEvaluation.results_handler import HoldoutResultsHandler, KFoldResultsHandler
+from ModelEvaluation.results_handler import KFoldResultsHandler
+from ModelEvaluation.holdout_validation import holdout_validation
 from Preprocessing.feature_target_variables import load_data
 from Preprocessing.data_cleaner import clean_data
 
@@ -34,38 +34,7 @@ def run_holdout_validation(X, Y, k):
         print(f"Errore: Il numero di vicini (k={k}) non può essere >= alla dimensione del training set ({train_size}).")
         return
 
-    splitter = KFoldCrossValidation()
-    X_train, X_test, Y_train, Y_test = splitter.holdout_split(X.values.tolist(), Y.values.tolist(), test_size=test_perc)
-
-    print(f"\n--- Divisione Holdout ({int((1-test_perc)*100)}/{int(test_perc*100)}) ---")
-    print(f"Dimensioni Training Set: {len(X_train)} campioni")
-    print(f"Dimensioni Test Set: {len(X_test)} campioni")
-    print("------------------------------------")
-
-    print("\nAddestramento del modello KNN...")
-    knn_model = KNN(X_train, Y_train, k)
-    print("Addestramento completato.")
-
-    print("\nValutazione del modello sul Test Set...")
-    y_pred = knn_model.test(X_test)
-    y_pred_proba = knn_model.test_proba(X_test)
-    print("Valutazione completata.")
-
-    # Calcola le metriche finali
-    metrics = calculate_metrics(Y_test, y_pred, y_pred_proba)
-
-    # Crea un prefisso unico per i file di output di questa esecuzione
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    prefix = f"holdout_k={k}_{timestamp}"
-
-    handler = HoldoutResultsHandler(
-        metrics=metrics,
-        y_true=Y_test,
-        y_pred=y_pred,
-        y_pred_proba=y_pred_proba,
-        filename_prefix=prefix
-    )
-    handler.save_results()
+    holdout_validation(X, Y, k, test_perc)
 
     print("\n" + "="*60)
     print("AVVISO: I risultati dettagliati e i grafici sono stati salvati.")
@@ -99,6 +68,9 @@ def run_kfold_validation(X, Y, k):
     handler = KFoldResultsHandler(
         all_fold_metrics=results['all_fold_metrics'],
         filename_prefix=prefix,
+        y_true_all=results.get('y_true'),
+        y_pred_all=results.get('y_pred'),
+        y_pred_proba_all=results.get('y_pred_proba')
     )
     handler.save_results()
 
