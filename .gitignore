@@ -18,6 +18,6 @@
 #
 ## --- Jupyter Notebooks ---
 #.ipynb_checkpoints
-
+version_1_cleaned.csv
 *.md
 .output/
