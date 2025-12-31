@@ -56,7 +56,7 @@ def run_kfold_validation(X, Y, k):
 
     kfold_validation(X, Y, k, K_folds)
 
-def run_stratified_shuffle_split(X, Y, k):
+def run_stratified_shuffle_split_validation(X, Y, k):
     while True:
         try:
             n_experiments = input("Inserisci il numero di Esperimenti per la Stratified shuffle split Validation: ")
@@ -148,7 +148,7 @@ def main():
         elif choice == 2:
             run_kfold_validation(X, Y, k_neighbors)
         elif choice == 3:
-            run_stratified_shuffle_split(X, Y, k_neighbors)
+            run_stratified_shuffle_split_validation(X, Y, k_neighbors)
         else : # scelta 4 esci
             clear_screen()
             print("Uscita dal programma. Arrivederci!")
