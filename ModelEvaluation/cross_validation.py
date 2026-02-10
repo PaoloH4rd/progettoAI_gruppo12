@@ -122,6 +122,61 @@ def evaluate_kfold(X, Y, knn_model_class, k_neighbors, k_folds=5):
     }
 
 
+def find_optimal_k(X, Y, k_range=range(1, 21), k_folds=5):
+    """
+    Trova il valore ottimale di k per KNN usando K-Fold Cross Validation.
+    Testa diversi valori di k e restituisce quello con la migliore accuratezza media.
+
+    Args:
+        X: Features (DataFrame o lista di liste)
+        Y: Target (Series o lista)
+        k_range: Range di valori di k da testare (default: 1-20)
+        k_folds: Numero di fold per la cross-validation (default: 5)
+
+    Returns:
+        int: Il valore ottimale di k
+    """
+    # Assicura che i dati siano in formato lista
+    X_data = X.values.tolist() if hasattr(X, 'values') else X
+    Y_data = Y.values.tolist() if hasattr(Y, 'values') else Y
+
+    best_k = 1
+    best_accuracy = 0.0
+
+    # Calcola la dimensione massima del training set per evitare errori
+    max_train_size = int(len(X_data) * (1 - 1/k_folds))
+
+    print("\nRicerca del k ottimale in corso...")
+
+    for k in k_range:
+        # Salta i valori di k troppo grandi per il training set
+        if k >= max_train_size:
+            break
+
+        # Suddividi i dati in fold
+        folds = k_fold_split(X_data, Y_data, k_folds)
+        fold_accuracies = []
+
+        for X_train, Y_train, X_test, Y_test in folds:
+            # Crea e testa il modello KNN
+            knn = KNN(X_train, Y_train, k)
+            y_pred = knn.test(X_test)
+
+            # Calcola l'accuratezza per questo fold
+            accuracy = sum(1 for pred, true in zip(y_pred, Y_test) if pred == true) / len(Y_test)
+            fold_accuracies.append(accuracy)
+
+        # Calcola l'accuratezza media su tutti i fold
+        mean_accuracy = sum(fold_accuracies) / len(fold_accuracies)
+
+        if mean_accuracy > best_accuracy:
+            best_accuracy = mean_accuracy
+            best_k = k
+
+    print(f"K ottimale trovato: {best_k} (Accuratezza media: {best_accuracy:.2%})")
+    return best_k
+
+
 def kfold_validation(X, Y, k, K_folds):
     """
     Esegue il workflow completo di validazione K-Fold.

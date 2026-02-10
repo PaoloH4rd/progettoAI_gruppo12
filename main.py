@@ -1,12 +1,12 @@
 import os
 import pandas as pd
 import time
+
 from ModelEvaluation.holdout_validation import holdout_validation
-from ModelEvaluation.cross_validation import kfold_validation
+from ModelEvaluation.cross_validation import kfold_validation, find_optimal_k
 from ModelEvaluation.stratified_shuffle_split_validation import stratified_shuffle_split_validation
 from Preprocessing.feature_target_variables import load_data
 from Preprocessing.data_cleaner import clean_data
-
 
 def clear_screen():
     """
@@ -134,6 +134,9 @@ def main():
         while True:
             try:
                 # sara chiesto il numero di vicini k per KNN in ogni caso, posso usare lo stesso input
+                print("\nConfigurazione KNN:")
+                print("="*50)
+                optimal_k = find_optimal_k(X, Y)
                 k_neighbors_str = input("\nInserisci il numero di vicini (k) per KNN: ")
                 k_neighbors = int(k_neighbors_str)
                 if k_neighbors <= 0:
