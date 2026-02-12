@@ -11,7 +11,6 @@ from Preprocessing.data_cleaner import clean_data
 def clear_screen():
     """
     Pulisce la schermata del terminale in modo portabile.
-    Stampa 100 righe vuote per simulare la pulizia dello schermo,
     """
     print("\n" * 100)
 
@@ -78,10 +77,6 @@ def run_stratified_shuffle_split_validation(X, Y, k):
 
 
 def main():
-    if not os.path.exists('version_1.csv'):
-        print("ERRORE: File 'version_1.csv' non trovato. Assicurati che sia nella root del progetto.")
-        input("Premi Invio per uscire.")
-        return
 
     pd.set_option('display.max_rows', None)
     pd.set_option('display.max_columns', None)
@@ -94,14 +89,27 @@ def main():
     print(f"| {welcome_message} |")
     print(frame_line)
     time.sleep(2)
-    clean_data()
-
+    
+    # Eseguiamo la pulizia dati
+    # clean_data ora gestisce internamente la richiesta del file se non viene passato
+    cleaned_path = None
     try:
-        X, Y = load_data()
-    except ValueError as e:
-        # controllo numero di classi target diverso da 2
-        print(f"\nERRORE CRITICO: {e}")
-        input("Premi Invio per terminare il programma...")
+        cleaned_path = clean_data()
+    except KeyboardInterrupt:
+        print("\nOperazione annullata dall'utente.")
+        return
+    except Exception as e:
+        print(f"\nERRORE durante la pulizia dei dati: {e}")
+        # Non ritorniamo qui, perché l'utente potrebbe voler caricare un file già pulito nel prossimo step
+
+    # load_data ora gestisce il loop di richiesta file internamente se cleaned_path è None
+    try:
+        X, Y = load_data(cleaned_path)
+    except KeyboardInterrupt:
+        print("\nOperazione annullata dall'utente.")
+        return
+    except Exception as e:
+        print(f"\nERRORE IRRECUPERABILE: {e}")
         return
 
     print(f"Dataset caricato: {len(X)} campioni con {len(X.columns)} feature.")
@@ -120,7 +128,8 @@ def main():
         print("="*50)
 
         try:
-            choice = int(input("Inserisci la tua scelta (1-3): "))
+            choice_input = input("Inserisci la tua scelta (1-4): ")
+            choice = int(choice_input)
         except ValueError:
             print("Scelta non valida. Inserisci un numero.")
             time.sleep(1)
@@ -130,15 +139,28 @@ def main():
             print("Scelta non valida. Riprova.")
             time.sleep(1)
             continue
+            
+        if choice == 4:
+            clear_screen()
+            print("Uscita dal programma. Arrivederci!")
+            break
 
         while True:
             try:
                 # sara chiesto il numero di vicini k per KNN in ogni caso, posso usare lo stesso input
                 print("\nConfigurazione KNN:")
                 print("="*50)
+                print("Ricerca del valore k ottimale in corso...")
                 optimal_k = find_optimal_k(X, Y)
-                k_neighbors_str = input("\nInserisci il numero di vicini (k) per KNN: ")
-                k_neighbors = int(k_neighbors_str)
+                print(f"Il valore suggerito per k (basato su Error Rate) è: {optimal_k}")
+                
+                k_neighbors_str = input(f"Inserisci il numero di vicini (k) per KNN (invio per usare {optimal_k}): ").strip()
+                
+                if not k_neighbors_str:
+                    k_neighbors = optimal_k
+                else:
+                    k_neighbors = int(k_neighbors_str)
+                    
                 if k_neighbors <= 0:
                     raise ValueError("Il numero di vicini deve essere un intero positivo.")
                 break
@@ -152,10 +174,7 @@ def main():
             run_kfold_validation(X, Y, k_neighbors)
         elif choice == 3:
             run_stratified_shuffle_split_validation(X, Y, k_neighbors)
-        else : # scelta 4 esci
-            clear_screen()
-            print("Uscita dal programma. Arrivederci!")
-            break
+
         another_run = input("\nVuoi eseguire un'altra operazione? (s/n): ").lower()
 
         if another_run != 's':
