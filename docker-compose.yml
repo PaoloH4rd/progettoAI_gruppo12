@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    image: proggetofia-app
+    container_name: proggetofia-container
+    stdin_open: true # Equivalent to -i
+    tty: true        # Equivalent to -t
+    volumes:
+      - ./output:/app/output
+      - ./contenitore csv:/app/contenitore csv
+    restart: "no"
