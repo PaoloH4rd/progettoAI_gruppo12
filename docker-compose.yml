@@ -1,5 +1,5 @@
 services:
-  app:
+  proggetofia-app:
     build: .
     image: proggetofia-app
     container_name: proggetofia-container
