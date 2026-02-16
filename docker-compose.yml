@@ -1,8 +1,8 @@
 services:
   proggetofia-app:
     build: .
-    image: proggetofia-app
-    container_name: proggetofia-container
+    image: progettofia-app
+    container_name: progettofia-container
     stdin_open: true # Equivalent to -i
     tty: true        # Equivalent to -t
     volumes:
