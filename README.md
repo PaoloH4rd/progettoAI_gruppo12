@@ -1,43 +1,84 @@
-# AI per la classificazione dei tumori
+# AI per la classificazione dei tumori - Progetto Fondamenti di Intelligenza Artificiale
 
-  # Descrizione del progetto
+Questo progetto implementa un sistema di intelligenza artificiale per la classificazione dei tumori (benigni o maligni) utilizzando un modello **K-Nearest Neighbors (K-NN)** sviluppato interamente da zero. L'obiettivo principale è fornire uno strumento di analisi robusto, supportato da diverse tecniche di validazione e metriche di valutazione avanzate.
 
-    L'obiettivo è sviluppare un modello di apprendimento automatico e verificarne le prestazioni per classificare i tumori in base alle caratteristiche fornite.
+## 🎯 Obiettivo del Progetto
 
-    Il sistema include diverse tecniche di validazione e metriche di valutazione per analizzare le prestazioni del modello. In particolare implementa un classificatore
-    K-Nearest Neighbors (K-NN), per classificare tumori come benigni o maligni, e tre approcci per la validazione, l'Holdout, il K-fold Cross Validation e lo Stratified
-    Shuffle Split.
+Sviluppare un modello di apprendimento automatico capace di classificare i tumori in base alle caratteristiche fornite nel dataset, verificandone le prestazioni attraverso metodologie rigorose di validazione.
 
-    # Holdout
-    
-    Divide il dataset una sola volta in due parti fisse: training set (es. 70%) e test set (es. 30%). Il modello viene addestrato sul training set e valutato
-    sul test set. Semplice ma può dare risultati instabili se la divisione è sfortunata.
+## 🚀 Caratteristiche Principali
 
-    # K-Fold Cross Validation
-    
-    Divide il dataset in K parti (fold) di dimensione uguale. Esegue K esperimenti: in ogni iterazione, usa K-1 fold per il training e 1 fold per il test,
-    ruotando quale fold viene usato per il test. Le performance finali sono la media dei K esperimenti. Fornisce una stima più robusta delle performance
-    rispetto a Holdout.
-    
-    # Stratified Shuffle Split
-    
-    Simile a Holdout ripetuto più volte: ad ogni iterazione, mescola casualmente i dati e li divide in training/test mantenendo le stesse proporzioni 
-    delle classi (stratificazione). Esegue K divisioni random indipendenti. La stratificazione garantisce che ogni split abbia la stessa distribuzione 
-    di classi del dataset originale, utile per dataset sbilanciati.
+- **KNN da zero**: Implementazione manuale della logica del classificatore e del calcolo delle distanze (Euclidea).
+- **Preprocessing**: Moduli dedicati alla pulizia e alla preparazione dei dati (`data_cleaner.py`).
+- **Tecniche di Validazione**:
+  - **Holdout**: Divide il dataset in training set (es. 70%) e test set (es. 30%). È un metodo rapido, sebbene sensibile alla specifica divisione dei dati.
+  - **K-Fold Cross Validation**: Divide il dataset in $K$ parti uguali. Esegue $K$ esperimenti ruotando il fold di test, fornendo una stima della performance più stabile e robusta.
+  - **Stratified Shuffle Split**: Esegue più divisioni casuali mantenendo la proporzione originale delle classi (stratificazione). Ideale per garantire che ogni split sia rappresentativo del dataset originale.
+- **Metriche di Valutazione**: Calcolo manuale di Accuracy, Error Rate, Sensitivity, Specificity, Geometric Mean e AUC (Area Under the Curve).
+- **Visualizzazione**: Generazione di matrici di confusione, curve ROC e grafici delle performance.
+- **Containerizzazione**: Supporto Docker per facilitare la distribuzione e l'esecuzione.
 
-  # Come Eseguire il Codice
-    > python main.py
+## 📁 Struttura del Progetto
 
-  Il programma chiederà interattivamente:
+```text
+progettofia/
+├── main.py                     # Entry point dell'applicazione (CLI)
+├── model.py                    # Wrapper del modello
+├── ModelDevelopment/
+│   └── knn_scratch.py          # Logica del KNN (distanze e predizioni)
+├── ModelEvaluation/
+│   ├── metrics.py              # Calcolo manuale di tutte le metriche
+│   ├── holdout_validation.py   # Implementazione Holdout
+│   ├── cross_validation.py     # Implementazione K-Fold
+│   └── ...                     # Altri metodi di validazione
+├── Preprocessing/
+│   ├── data_cleaner.py         # Script per la pulizia del dataset
+│   └── feature_target_variables.py # Gestione feature e target
+├── contenitore csv/            # Directory per i dataset
+├── output/                     # Grafici e report generati
+├── Dockerfile                  # Configurazione Docker
+└── requirements.txt            # Dipendenze generate
+```
 
-    - Il valore di k (numero di vicini)
-    - Il metodo di validazione (Holdout, K-fold Cross Validation, Stratified Shuffle Split)
-    - Le metriche da calcolare
- # Per la gestione dei pacchetti pip del venv è stato utilizzato pip-tools
-   - i pacchetti principali sono nel file requirements.in
-   - per generare il file requirements.txt :
-   > pip-compile requirements.in    
- # Per inizializzare il venv
-   > pip install -r requirements.txt
-   > pip-sync
-   
+## 🛠️ Installazione e Setup
+
+### Gestione Pacchetti
+Per la gestione delle dipendenze è stato utilizzato `pip-tools`.
+- I pacchetti principali sono definiti in `requirements.in`.
+- Per rigenerare il file delle dipendenze:
+  ```bash
+  pip-compile requirements.in
+  ```
+
+### Inizializzazione Virtual Environment
+1. Crea il venv: `python -m venv .venv`
+2. Attiva il venv: 
+   - Linux/macOS: `source .venv/bin/activate`
+   - Windows: `.venv\Scripts\activate`
+3. Installa e sincronizza:
+   ```bash
+   pip install -r requirements.txt
+   pip-sync
+   ```
+
+### Esecuzione con Docker
+```bash
+docker-compose up --build
+```
+
+## 💻 Utilizzo
+
+Esegui il file principale per avviare l'interfaccia interattiva:
+
+```bash
+python main.py
+```
+
+Il programma chiederà interattivamente:
+- Il file da analizzare (e procederà alla pulizia se necessario).
+- Il valore di **k** (numero di vicini); il sistema suggerirà un valore ottimale basato sull'Error Rate.
+- Il metodo di validazione desiderato (**Holdout**, **K-Fold**, **Stratified Shuffle Split**).
+- Le metriche verranno calcolate automaticamente e i risultati (inclusi i grafici) saranno salvati nella cartella `output/`.
+
+---
+*Progetto realizzato per il corso di Fondamenti di Intelligenza Artificiale.*
