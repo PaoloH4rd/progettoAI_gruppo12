@@ -63,7 +63,8 @@ Per la gestione delle dipendenze è stato utilizzato `pip-tools`.
 
 ### Esecuzione con Docker
 ```bash
-docker-compose up --build
+docker compose build
+docker compose run progettofia-app
 ```
 
 ## 💻 Utilizzo
