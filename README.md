@@ -41,7 +41,10 @@ progettofia/
 ```
 
 ## 🛠️ Installazione e Setup
-
+### Clone del repository
+  ```bash
+  git clone https://github.com/PaoloH4rd/progettoAI_gruppo12.git
+  ```
 ### Gestione Pacchetti
 Per la gestione delle dipendenze è stato utilizzato `pip-tools`.
 - I pacchetti principali sono definiti in `requirements.in`.
@@ -67,12 +70,16 @@ docker compose build
 docker compose run progettofia-app
 ```
 Ricordiamo che eseguendo il container è necessario montare come volumi sul container i file di dati da caricare 
-oppure creare una cartella e utilizzare un bind mount nel docker-compose.yml è riportata una configurazione di esempio:
+oppure creare una cartella e utilizzare un bind mount nel docker-compose.yml  
+è riportata una configurazione di esempio:
 ```yml
 volumes:
   - ./output:/app/output
   - /percorso/contentente/csv:/app/contenitore csv
 ```
+Di default la cartella montata sarà contenitore csv  che viene scaricata durante il clone della repo.  
+
+Per visualizzare l'output dopo l'esecuzione del container controllare la cartella in bind chiamata output 
 
 ## 💻 Utilizzo
 
