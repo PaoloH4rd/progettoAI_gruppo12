@@ -2,7 +2,6 @@
 __pycache__/
 .git/
 .idea/
-.gemini/
 *.png
 *.csv
 output/

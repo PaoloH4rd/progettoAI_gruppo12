@@ -23,7 +23,7 @@ def run_holdout_validation(X, Y, k):
                 raise ValueError("La percentuale deve essere un numero compreso tra 0 e 1 (esclusi).")
             break
         except ValueError as e:
-            print(f"Input non valido: {e}. Riprova.")
+            print(f"Input non valido: . Riprova.")
             time.sleep(2)
 
     train_size = int(len(X) * (1 - test_perc))
@@ -42,7 +42,7 @@ def run_kfold_validation(X, Y, k):
                 raise ValueError("Il numero di fold deve essere maggiore di 1.")
             break
         except ValueError as e:
-            print(f"Input non valido: {e}. Riprova.")
+            print(f"Input non valido: . Riprova.")
             time.sleep(2)
 
     # controllo se k= numero di vicini consultati dal KNN è minore della dimensione del training set in ogni fold
@@ -63,7 +63,7 @@ def run_stratified_shuffle_split_validation(X, Y, k):
                 raise ValueError("Il numero di Esperimenti deve essere maggiore di 1.")
             break
         except ValueError as e:
-            print(f"Input non valido: {e}. Riprova.")
+            print(f"Input non valido: . Riprova.")
             time.sleep(2)
     # controllo se k= numero di vicini consultati dal KNN è minore della dimensione del training set in ogni esperimento
     # la proporzione di test è fissa al 20%
@@ -149,14 +149,27 @@ def main():
                 # sara chiesto il numero di vicini k per KNN in ogni caso, posso usare lo stesso input
                 print("\nConfigurazione KNN:")
                 print("="*50)
-                print("Ricerca del valore k ottimale in corso...")
-                optimal_k = find_optimal_k(X, Y)
-                print(f"Il valore suggerito per k (basato su Error Rate) è: {optimal_k}")
                 
-                k_neighbors_str = input(f"Inserisci il numero di vicini (k) per KNN (invio per usare {optimal_k}): ").strip()
+                calc_opt = input("Vuoi calcolare il k ottimo? (s/n): ").lower().strip()
+                optimal_k = None
+                
+                if calc_opt == 's':
+                    print("Ricerca del valore k ottimale in corso...")
+                    optimal_k = find_optimal_k(X, Y)
+                    print(f"Il valore suggerito per k (basato su Error Rate) è: {optimal_k}")
+                
+                if optimal_k:
+                    k_input_msg = f"Inserisci il numero di vicini (k) per KNN (invio per usare {optimal_k}): "
+                else:
+                    k_input_msg = "Inserisci il numero di vicini (k) per KNN: "
+
+                k_neighbors_str = input(k_input_msg).strip()
                 
                 if not k_neighbors_str:
-                    k_neighbors = optimal_k
+                    if optimal_k:
+                        k_neighbors = optimal_k
+                    else:
+                        raise ValueError("Devi inserire un valore valido per k.")
                 else:
                     k_neighbors = int(k_neighbors_str)
                     
@@ -164,7 +177,7 @@ def main():
                     raise ValueError("Il numero di vicini deve essere un intero positivo.")
                 break
             except ValueError as e:
-                print(f"Input non valido: {e}. Riprova.")
+                print(f"Input non valido: . Riprova.")
                 time.sleep(1)
 
         if choice == 1:

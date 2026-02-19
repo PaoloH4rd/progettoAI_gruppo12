@@ -27,7 +27,7 @@ def clean_data(input_csv_path=None):
                     if not f.endswith('_cleaned.csv'): # Non mostrare i file già puliti
                         print(f"  - {f}")
             
-            print("\n Posiziona i file nella cartella contenitore di csv oppure \n Inserisci il nome del file CSV da pulire (es. dati.csv) o il percorso relativo completo:")
+            print("\n Posiziona i file nella cartella contenitore di csv oppure \n Inserisci il nome del file CSV da pulire (es. dati.csv) o il percorso completo:")
             user_input = input().strip()
             
             if not user_input:
