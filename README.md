@@ -66,6 +66,13 @@ Per la gestione delle dipendenze è stato utilizzato `pip-tools`.
 docker compose build
 docker compose run progettofia-app
 ```
+Ricordiamo che eseguendo il container è necessario montare come volumi sul container i file di dati da caricare 
+oppure creare una cartella e utilizzare un bind mount nel docker-compose.yml è riportata una configurazione di esempio:
+```yml
+volumes:
+  - ./output:/app/output
+  - /percorso/contentente/csv:/app/contenitore csv
+```
 
 ## 💻 Utilizzo
 
