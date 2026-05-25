@@ -93,4 +93,6 @@ class KNN:
             proba_positive = label_counts.get(positive_class, 0) / self.k
             y_test_proba.append(proba_positive)
 
+
+
         return y_test_proba
